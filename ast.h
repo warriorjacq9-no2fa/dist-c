@@ -21,5 +21,7 @@ struct AST {
     ast_new((AST){tag, {.tag=(struct tag){__VA_ARGS__}}})
 
 AST* ast_new(AST ast);
+void ast_free(AST* ast);
+void ast_print(AST* ast);
 
 #endif
