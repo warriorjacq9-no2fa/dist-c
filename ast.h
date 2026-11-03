@@ -5,7 +5,7 @@ typedef struct AST AST;
 
 /* @ADDNEW */
 struct AST {
-  enum {
+  enum ast_tag {
     AST_NUMBER,
     AST_ADD,
     AST_MUL,
