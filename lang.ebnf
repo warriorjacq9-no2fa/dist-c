@@ -1,0 +1,87 @@
+top =  { elem } ;
+
+elem =
+    declaration
+    | function declaration
+    | preprocessor
+    | comment ;
+
+declaration = type, identifier, [ assigner, statement ], ";" ;
+
+function declaration = 
+    type, identifier, "(", argument list, ")", ";"
+    | type, identifier, "(", argument list, ")",  "{",
+        function body,
+    "}" ;
+
+argument list = [argument, { ",", argument } ], [ "..." ] ;
+
+argument = type, identifier ;
+
+function body = 
+    { expr, ";" }
+    | comment ;
+
+expr =
+    assignment
+    | function call ;
+
+assignment = identifier, assigner, statement ;
+
+assigner = "=" | "*=" | "/=" | "%=" | "+=" | "-=" | ">>=" | "<<=" | "&=" | "^=" | "|=" ;
+
+function call = identifier, "(", [ statement, { ",", statement } ], ")" ;
+
+preprocessor =
+    define
+    | undef
+    | preproc if
+    | error 
+    | warning
+    | line
+    | pragma ;
+
+define = "#define", identifier, [ identifier | number ] ;
+
+undef = "#undef", identifier ;
+
+preproc if = 
+    ["#if", [define condition] | "#ifdef" | "#ifndef" ], condition, { expr }, [ 
+        "#else", { expr }
+        | "#elif", define condition | condition, { expr }
+    ], "#endif" ;
+
+error = "#error", ? any char ?, "\n" ;
+
+warning = "#warning", ? any char ?, "\n" ;
+
+line = "#line", number ;
+
+pragma = "#pragma", ? any char ?, "\n" ; 
+
+define condition = ["!"], "defined", "(", identifier, ")" ;
+
+
+type = identifier ;
+
+condition =
+    ["!"], condition_term, { conditional, condition_term } ;
+
+condition_term =
+    ["("], statement, [")"]
+    | ["("], condition, [")"] ;
+
+statement = identifier, { operator, identifier } ;
+
+operator = "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|" ;
+conditional = "==" | "!=" | ">" | ">=" | "<" | "<=" | "&&" | "||" ;
+
+identifier = ? /[a-zA-Z_][a-z-A-Z0-9_]*$/ ? ;
+
+number = "0x", ? /[0-9a-fA-F]+/ ?
+    | "0b", ? /[0-1]+/ ?
+    | "0", ? /[0-7]+/ ?
+    | ? /[0-9]+/ ? ;
+
+comment = "/*", ? any char ?, "*/"
+    | "//", ? any char ? ;
