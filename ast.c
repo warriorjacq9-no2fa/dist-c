@@ -10,7 +10,7 @@ AST* ast_new(AST ast) {
 
 /* @ADDNEW */
 void ast_free(AST* ast) {
-    switch (ast->tag) {
+    switch(ast->tag) {
         case AST_NUMBER: {
             struct AST_NUMBER data = ast->data.AST_NUMBER;
             break;
@@ -33,7 +33,7 @@ void ast_free(AST* ast) {
 
 /* @ADDNEW */
 void _ast_print(AST* ast) {
-    switch (ast->tag) {
+    switch(ast->tag) {
         case AST_NUMBER: {
             struct AST_NUMBER data = ast->data.AST_NUMBER;
             printf("%d", data.number);
@@ -41,7 +41,7 @@ void _ast_print(AST* ast) {
         }
         case AST_ADD: {
             struct AST_ADD data = ast->data.AST_ADD;
-            printf("(* ");
+            printf("(+ ");
             _ast_print(data.left);
             printf(" ");
             _ast_print(data.right);
@@ -50,7 +50,7 @@ void _ast_print(AST* ast) {
         }
         case AST_MUL: {
             struct AST_MUL data = ast->data.AST_MUL;
-            printf("(+ ");
+            printf("(* ");
             _ast_print(data.left);
             printf(" ");
             _ast_print(data.right);
