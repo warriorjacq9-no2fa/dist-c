@@ -41,15 +41,32 @@ void shift_left(AST* a, size_t n, unsigned int shift) {
     }
 }
 
-enum ast_token enum_token(char* tok, int i) {
-    if(strcmp(tok, "*") == 0) return AST_MUL;
-    if(strcmp(tok, "/") == 0) return AST_DIV;
-    if(strcmp(tok, "+") == 0) return AST_SUM;
-    if(strcmp(tok, "-") == 0) return AST_DIF;
-    if(match(tok, "^[0-9]+$")) return AST_NUMBER;
-    
-    fprintf(stderr, "Unknown token %s at 1:%d\n", tok, i + 1);
-    exit(1);
+int enum_tokens(AST* tok_list, char* data) {
+    char* tok = strtok(data, " ");
+    int i = 0, chr = 0;
+    while(tok != NULL) {
+        if(strcmp(tok, "*") == 0) tok_list[i].token = AST_MUL;
+        else if(strcmp(tok, "/") == 0) tok_list[i].token = AST_DIV;
+        else if(strcmp(tok, "+") == 0) tok_list[i].token = AST_SUM;
+        else if(strcmp(tok, "-") == 0) tok_list[i].token = AST_DIF;
+        else if(match(tok, "^[0-9]+$")) {
+            tok_list[i].token = AST_NUMBER;
+            tok_list[i].data.AST_NUMBER = atoi(tok);
+        } else {
+            fprintf(stderr, "Unknown token %s at 1:%d\n", tok, chr + 1);
+            return -1;
+        }
+
+        tok_list[i].col = chr;
+        if(tok_list[i].token == AST_NUMBER) {
+            tok_list[i].data.AST_NUMBER = atoi(tok);
+        }
+        chr += strlen(tok) + 1;
+        tok = strtok(NULL, " ");
+        i++;
+    }
+
+    return i;
 }
 
 bool contains(enum ast_token t, enum ast_token* a, size_t sz) {
@@ -72,7 +89,7 @@ int do_pass(AST* tok_list, size_t sz, enum ast_token* types, size_t types_sz) {
                     fprintf(stderr, "Expected lvalue at %d:%d\n", tok->line + 1, tok->col + 1);
                     return 1;
                 }
-                if(i + 1 == sz) {
+                if(i + 1 >= sz) {
                     fprintf(stderr, "Expected rvalue at %d:%d\n", tok->line + 1, tok->col + 1);
                     return 1;
                 }
@@ -82,6 +99,15 @@ int do_pass(AST* tok_list, size_t sz, enum ast_token* types, size_t types_sz) {
 
                 *rvalue = tok_list[i + 1];
                 *lvalue = tok_list[i - 1];
+
+                if(lvalue->token == AST_NONE) {
+                    fprintf(stderr, "Expected lvalue at %d:%d\n", tok->line + 1, tok->col + 1);
+                    return 1;
+                }
+                if(rvalue->token == AST_NONE) {
+                    fprintf(stderr, "Expected rvalue at %d:%d\n", tok->line + 1, tok->col + 1);
+                    return 1;
+                }
 
                 if(ast_is_leaf(rvalue) && rvalue->token != AST_NUMBER) {
                     fprintf(stderr, "Invalid rvalue: got %s, expected NUMBER at %d:%d\n",
@@ -125,19 +151,9 @@ AST* parse(char* data) {
     memset(tok_list, 0, sz * sizeof(AST));
 
     // Enum and NUMBER pass
-    char* tok = strtok(data, " ");
-    int i = 0;
-    while(tok != NULL) {
-        tok_list[i].token = enum_token(tok, i);
-        tok_list[i].col = i;
-        if(tok_list[i].token == AST_NUMBER) {
-            tok_list[i].data.AST_NUMBER = atoi(tok);
-        }
-        tok = strtok(NULL, " ");
-        i++;
-    }
-
-    sz = i;
+    int ret = enum_tokens(tok_list, data);
+    if(ret < 0) return NULL;
+    sz = (size_t) ret;
 
     // MUL/DIV
     do_pass(tok_list, sz, (enum ast_token[]){AST_MUL, AST_DIV}, 2);
