@@ -69,7 +69,11 @@ int do_pass(AST* tok_list, size_t sz, enum ast_token* types, size_t types_sz) {
             AST* tok = &tok_list[i];
             if(contains(tok->token, types, types_sz) && ast_is_leaf(tok)) {
                 if(i == 0) {
-                    fprintf(stderr, "Expected lvalue\n");
+                    fprintf(stderr, "Expected lvalue at %d:%d\n", tok->line + 1, tok->col + 1);
+                    return 1;
+                }
+                if(i + 1 == sz) {
+                    fprintf(stderr, "Expected rvalue at %d:%d\n", tok->line + 1, tok->col + 1);
                     return 1;
                 }
 
@@ -133,15 +137,13 @@ AST* parse(char* data) {
         i++;
     }
 
+    sz = i;
+
     // MUL/DIV
     do_pass(tok_list, sz, (enum ast_token[]){AST_MUL, AST_DIV}, 2);
 
     // SUM/DIF
     do_pass(tok_list, sz, (enum ast_token[]){AST_SUM, AST_DIF}, 2);
-
-    for(enum ast_token t = 0; t < _AST_EOL; t++) {
-        do_pass(tok_list, sz, &t, 1);
-    }
 
     AST* top = malloc(sizeof(AST));
     *top = tok_list[0];

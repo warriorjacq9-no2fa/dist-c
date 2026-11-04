@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 char* ast_names[] = {
-    "",
+    "NONE",
     "MUL",
     "DIV",
     "SUM",
@@ -12,6 +12,7 @@ char* ast_names[] = {
 };
 
 bool ast_is_leaf(AST* ast) {
+    if(ast->token == AST_NONE) return false;
     if(ast->left == NULL && ast->right == NULL) return true;
     return false;
 }
