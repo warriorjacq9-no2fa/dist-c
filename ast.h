@@ -10,14 +10,18 @@ extern char* ast_names[];
 struct AST {
     enum ast_token {
         AST_NONE,
-        AST_NUMBER,
+        AST_MUL,
+        AST_DIV,
         AST_SUM,
-        AST_MUL
+        AST_DIF,
+        AST_NUMBER,
+        _AST_EOL
     } token;
     union {
         int AST_NUMBER;
     } data;
     AST *left; AST *right;
+    int line, col;
 };
 
 void ast_free(AST* ast);

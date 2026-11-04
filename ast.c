@@ -4,9 +4,11 @@
 
 char* ast_names[] = {
     "",
-    "NUMBER",
+    "MUL",
+    "DIV",
     "SUM",
-    "MUL"
+    "DIF",
+    "NUMBER",
 };
 
 bool ast_is_leaf(AST* ast) {
@@ -38,8 +40,24 @@ void _ast_print(AST* ast) {
             printf(")");
             break;
         }
+        case AST_DIF: {
+            printf("(- ");
+            _ast_print(ast->left);
+            printf(" ");
+            _ast_print(ast->right);
+            printf(")");
+            break;
+        }
         case AST_MUL: {
             printf("(* ");
+            _ast_print(ast->left);
+            printf(" ");
+            _ast_print(ast->right);
+            printf(")");
+            break;
+        }
+        case AST_DIV: {
+            printf("(/ ");
             _ast_print(ast->left);
             printf(" ");
             _ast_print(ast->right);

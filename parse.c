@@ -41,22 +41,35 @@ void shift_left(AST* a, size_t n, unsigned int shift) {
     }
 }
 
-enum ast_token enum_token(char* tok) {
-    if(strcmp(tok, "+") == 0) return AST_SUM;
+enum ast_token enum_token(char* tok, int i) {
     if(strcmp(tok, "*") == 0) return AST_MUL;
-    if(match(tok, "[0-9]+")) return AST_NUMBER;
+    if(strcmp(tok, "/") == 0) return AST_DIV;
+    if(strcmp(tok, "+") == 0) return AST_SUM;
+    if(strcmp(tok, "-") == 0) return AST_DIF;
+    if(match(tok, "^[0-9]+$")) return AST_NUMBER;
     
-    fprintf(stderr, "Unknown token %s\n", tok);
+    fprintf(stderr, "Unknown token %s at 1:%d\n", tok, i + 1);
     exit(1);
 }
 
-int do_pass(AST* tok_list, size_t sz, enum ast_token type) {
+bool contains(enum ast_token t, enum ast_token* a, size_t sz) {
+    bool c = false;
+    for(int i = 0; i < sz; i++) {
+        if(a[i] == t) {
+            c = true;
+            break;
+        }
+    }
+    return c;
+}
+
+int do_pass(AST* tok_list, size_t sz, enum ast_token* types, size_t types_sz) {
     while(1) {
         for(int i = 0; i < sz; i++) {
             AST* tok = &tok_list[i];
-            if(tok->token == type && ast_is_leaf(tok)) {
+            if(contains(tok->token, types, types_sz) && ast_is_leaf(tok)) {
                 if(i == 0) {
-                    fprintf(stderr, "%s must have an lvalue\n", ast_names[type]);
+                    fprintf(stderr, "Expected lvalue\n");
                     return 1;
                 }
 
@@ -67,11 +80,15 @@ int do_pass(AST* tok_list, size_t sz, enum ast_token type) {
                 *lvalue = tok_list[i - 1];
 
                 if(ast_is_leaf(rvalue) && rvalue->token != AST_NUMBER) {
-                    fprintf(stderr, "Incorrect rvalue for %s, got %s, expected NUMBER\n", ast_names[type], ast_names[rvalue->token]);
+                    fprintf(stderr, "Invalid rvalue: got %s, expected NUMBER at %d:%d\n",
+                        ast_names[rvalue->token], tok->line + 1, tok->col + 1
+                    );
                     return 1;
                 }
                 if(ast_is_leaf(lvalue) && lvalue->token != AST_NUMBER) {
-                    fprintf(stderr, "Incorrect lvalue for %s, got %s, expected NUMBER\n", ast_names[type], ast_names[lvalue->token]);
+                    fprintf(stderr, "Invalid lvalue: got %s, expected NUMBER at %d:%d\n",
+                        ast_names[lvalue->token], tok->line + 1, tok->col + 1
+                    );
                     return 1;
                 }
 
@@ -83,19 +100,14 @@ int do_pass(AST* tok_list, size_t sz, enum ast_token type) {
                 shift_left(&tok_list[i - 1], sz - (i - 1), 2);
 
                 tok_list[i - 1] = tmp;
-                
+
                 i--;
             }
         }
 
-        for(int i = 0; i < sz; i++) {
-            printf("%s %d: ", ast_names[type], i);
-            ast_print(&tok_list[i]);
-        }
-
         int num = 0;
         for(int i = 0; i < sz; i++) {
-            if(tok_list[i].token == type) num++;
+            if(contains(tok_list[i].token, types, types_sz)) num++;
         }
 
         if(num <= 1) break;
@@ -112,7 +124,8 @@ AST* parse(char* data) {
     char* tok = strtok(data, " ");
     int i = 0;
     while(tok != NULL) {
-        tok_list[i].token = enum_token(tok);
+        tok_list[i].token = enum_token(tok, i);
+        tok_list[i].col = i;
         if(tok_list[i].token == AST_NUMBER) {
             tok_list[i].data.AST_NUMBER = atoi(tok);
         }
@@ -120,11 +133,15 @@ AST* parse(char* data) {
         i++;
     }
 
-    // MUL pass
-    do_pass(tok_list, sz, AST_MUL);
+    // MUL/DIV
+    do_pass(tok_list, sz, (enum ast_token[]){AST_MUL, AST_DIV}, 2);
 
-    // SUM pass
-    do_pass(tok_list, sz, AST_SUM);
+    // SUM/DIF
+    do_pass(tok_list, sz, (enum ast_token[]){AST_SUM, AST_DIF}, 2);
+
+    for(enum ast_token t = 0; t < _AST_EOL; t++) {
+        do_pass(tok_list, sz, &t, 1);
+    }
 
     AST* top = malloc(sizeof(AST));
     *top = tok_list[0];
