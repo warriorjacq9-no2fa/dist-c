@@ -9,4 +9,5 @@ int main(int argc, char* argv[]) {
     }
 
     ast_print(parse(argv[1]));
+    fflush(stderr);
 }

@@ -87,11 +87,11 @@ int do_pass(AST* tok_list, size_t sz, enum ast_token* types, size_t types_sz) {
             if(contains(tok->token, types, types_sz) && ast_is_leaf(tok)) {
                 if(i == 0) {
                     fprintf(stderr, "Expected lvalue at %d:%d\n", tok->line + 1, tok->col + 1);
-                    return 1;
+                    return -1;
                 }
                 if(i + 1 >= sz) {
                     fprintf(stderr, "Expected rvalue at %d:%d\n", tok->line + 1, tok->col + 1);
-                    return 1;
+                    return -1;
                 }
 
                 AST* rvalue = malloc(sizeof(AST));
@@ -102,24 +102,24 @@ int do_pass(AST* tok_list, size_t sz, enum ast_token* types, size_t types_sz) {
 
                 if(lvalue->token == AST_NONE) {
                     fprintf(stderr, "Expected lvalue at %d:%d\n", tok->line + 1, tok->col + 1);
-                    return 1;
+                    return -1;
                 }
                 if(rvalue->token == AST_NONE) {
                     fprintf(stderr, "Expected rvalue at %d:%d\n", tok->line + 1, tok->col + 1);
-                    return 1;
+                    return -1;
                 }
 
                 if(ast_is_leaf(rvalue) && rvalue->token != AST_NUMBER) {
                     fprintf(stderr, "Invalid rvalue: got %s, expected NUMBER at %d:%d\n",
                         ast_names[rvalue->token], tok->line + 1, tok->col + 1
                     );
-                    return 1;
+                    return -1;
                 }
                 if(ast_is_leaf(lvalue) && lvalue->token != AST_NUMBER) {
                     fprintf(stderr, "Invalid lvalue: got %s, expected NUMBER at %d:%d\n",
                         ast_names[lvalue->token], tok->line + 1, tok->col + 1
                     );
-                    return 1;
+                    return -1;
                 }
 
                 tok->left = lvalue;
@@ -156,10 +156,10 @@ AST* parse(char* data) {
     sz = (size_t) ret;
 
     // MUL/DIV
-    do_pass(tok_list, sz, (enum ast_token[]){AST_MUL, AST_DIV}, 2);
+    if(do_pass(tok_list, sz, (enum ast_token[]){AST_MUL, AST_DIV}, 2) < 0) return NULL;
 
     // SUM/DIF
-    do_pass(tok_list, sz, (enum ast_token[]){AST_SUM, AST_DIF}, 2);
+    if(do_pass(tok_list, sz, (enum ast_token[]){AST_SUM, AST_DIF}, 2) < 0) return NULL;
 
     AST* top = malloc(sizeof(AST));
     *top = tok_list[0];
