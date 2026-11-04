@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <regex.h>
 #include "ast.h"
 
@@ -28,32 +29,5 @@ int match(const char* s, const char* restrict r) {
         fprintf(stderr, "Regex match failed: %s\n", msgbuf);
         regfree(&regex);
         return 0;
-    }
-}
-
-enum ast_tag enum_token(char* tok) {
-    if(strcmp(tok, "+")) return AST_ADD;
-    if(strcmp(tok, "*")) return AST_MUL;
-    if(match(tok, "[0-9]+")) return AST_NUMBER;
-    fprintf(stderr, "Unkown token %s\n", tok);
-    exit(1);
-}
-
-AST* parse(char* data) {
-    char* saveptr;
-    char* tok = strtok_r(data, " ", &saveptr);
-    while(tok != NULL) {
-        AST ast = (AST) {.tag = enum_token(tok)};
-        switch(ast.tag) {
-            case AST_NUMBER: {
-                struct AST_NUMBER* data = &ast.data.AST_NUMBER;
-                data->number = atoi(tok);
-                break;
-            }
-            case AST_ADD: {
-                struct AST_ADD* data = &ast.data.AST_ADD;
-            }
-        }
-        tok = strtok(NULL, " ");
     }
 }

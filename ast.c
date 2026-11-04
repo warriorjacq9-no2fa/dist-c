@@ -2,61 +2,46 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-AST* ast_new(AST ast) {
-    AST* ptr = malloc(sizeof(AST));
-    if(ptr) *ptr = ast;
-    return ptr;
-}
+char* ast_names[] = {
+    "",
+    "NUMBER",
+    "SUM",
+    "MUL"
+};
 
-/* @ADDNEW */
 void ast_free(AST* ast) {
-    switch(ast->tag) {
-        case AST_NUMBER: {
-            struct AST_NUMBER data = ast->data.AST_NUMBER;
-            break;
-        }
-        case AST_ADD: {
-            struct AST_ADD data = ast->data.AST_ADD;
-            ast_free(data.left);
-            ast_free(data.right);
-            break;
-        }
-        case AST_MUL: {
-            struct AST_MUL data = ast->data.AST_MUL;
-            ast_free(data.left);
-            ast_free(data.right);
-            break;
-        }
-    }
+    if(ast == NULL) return;
+
+    ast_free(ast->left);
+    ast_free(ast->right);
+
+    free(ast->token);
     free(ast);
 }
 
-/* @ADDNEW */
 void _ast_print(AST* ast) {
-    switch(ast->tag) {
+    switch(ast->token_enum) {
         case AST_NUMBER: {
-            struct AST_NUMBER data = ast->data.AST_NUMBER;
-            printf("%d", data.number);
+            printf("%s", ast->token);
             break;
         }
-        case AST_ADD: {
-            struct AST_ADD data = ast->data.AST_ADD;
+        case AST_SUM: {
             printf("(+ ");
-            _ast_print(data.left);
+            _ast_print(ast->left);
             printf(" ");
-            _ast_print(data.right);
+            _ast_print(ast->right);
             printf(")");
             break;
         }
         case AST_MUL: {
-            struct AST_MUL data = ast->data.AST_MUL;
             printf("(* ");
-            _ast_print(data.left);
+            _ast_print(ast->left);
             printf(" ");
-            _ast_print(data.right);
+            _ast_print(ast->right);
             printf(")");
             break;
         }
+        default: break;
     }
 }
 
