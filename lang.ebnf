@@ -3,10 +3,16 @@ top =  { elem } ;
 elem =
     declaration
     | function declaration
-    | preprocessor
-    | comment ;
+    | preprocessor ;
 
-declaration = type, identifier, [ assigner, statement ], ";" ;
+declaration =
+    variable declaration
+    | enum declaration
+    | struct declaration ;
+
+variable declaration = { specifier }, type, declarator, { ",", declarator }, ";" ;
+
+declarator = identifier, [ assigner, statement ] ;
 
 function declaration = 
     type, identifier, "(", argument list, ")", ";"
@@ -14,23 +20,76 @@ function declaration =
         function body,
     "}" ;
 
+enum declaration = "enum", [ identifier ], "{",
+        { enum element },
+    "}", [ identifier ], ";" ;
+
+enum element = identifier, [ "=", number | identifier ] ;
+
+struct declaration = "struct", [ identifier ], "{",
+        { struct element },
+    "}", [ identifier ], ";" ;
+
+struct element = declaration ;
+
 argument list = [argument, { ",", argument } ], [ "..." ] ;
 
-argument = type, identifier ;
+argument = type, [ identifier ] ;
 
-function body = 
-    { expr, ";" }
-    | comment ;
+function body = { expr } ;
 
 expr =
-    assignment
-    | function call ;
+    declaration,
+    | assignment, ";"
+    | function call, ";"
+    | do while
+    | for
+    | goto
+    | if
+    | switch
+    | while ;
 
 assignment = identifier, assigner, statement ;
 
 assigner = "=" | "*=" | "/=" | "%=" | "+=" | "-=" | ">>=" | "<<=" | "&=" | "^=" | "|=" ;
 
 function call = identifier, "(", [ statement, { ",", statement } ], ")" ;
+
+do while = "do", "{", 
+        { expr },
+    "}", "while", "(", condition, ")", ";" ;
+
+for = "for", "(", variable declaration, ";", condition, ";", ( statement | assignment ), ")", "{",
+        { expr },
+    "}" ;
+
+goto = "goto", identifier, ";" ;
+
+if = "if", "(", condition, ")", "{",
+        { expr },
+    "}",
+    { else if },
+    [ else ] ;
+
+else if = "else if", "(", condition, ")", "{",
+        { expr },
+    "}" ;
+
+else = "else", "{",
+        { expr },
+    "}" ;
+
+switch = "switch", "(", statement, ")", "{",
+        { case },
+    "}" ;
+
+case = "case", value, "{",
+        { expr },
+    "}" ;
+
+while = "while", "(", condition, ")", "{",
+        { expr },
+    "}" ;
 
 preprocessor =
     define
@@ -64,17 +123,28 @@ define condition = ["!"], "defined", "(", identifier, ")" ;
 
 type = identifier ;
 
-condition =
-    ["!"], condition_term, { conditional, condition_term } ;
+specifier = identifier ;
 
-condition_term =
+condition =
+    ["!"], condition term, { conditional, condition term } ;
+
+condition term =
     ["("], statement, [")"]
     | ["("], condition, [")"] ;
 
-statement = identifier, { operator, identifier } ;
+statement = value, { operator, value } ;
 
 operator = "*" | "/" | "%" | "+" | "-" | "<<" | ">>" | "&" | "^" | "|" ;
+unary modifier = "++" | "--" ;
+unary operator = "+" | "-" | "!" | "~" ;
+pointer operator = "*" | "&" ;
 conditional = "==" | "!=" | ">" | ">=" | "<" | "<=" | "&&" | "||" ;
+
+value =
+    { unary operator | unary modifier | pointer operator | cast }, identifier, [ unary modifier ]
+    | { unary operator | cast }, number ;
+
+cast = "(", type, ")" ;
 
 identifier = ? /[a-zA-Z_][a-z-A-Z0-9_]*$/ ? ;
 
@@ -82,6 +152,3 @@ number = "0x", ? /[0-9a-fA-F]+/ ?
     | "0b", ? /[0-1]+/ ?
     | "0", ? /[0-7]+/ ?
     | ? /[0-9]+/ ? ;
-
-comment = "/*", ? any char ?, "*/"
-    | "//", ? any char ? ;
