@@ -1,2 +1,4 @@
 *.o
 main
+.antlr/
+compile_commands.json
