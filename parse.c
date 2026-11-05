@@ -5,6 +5,8 @@
 #include <regex.h>
 #include "ast.h"
 
+int do_all_passes(AST* tok_list, size_t sz);
+
 int match(const char* s, const char* restrict r) {
     regex_t regex;
     int reti;
@@ -32,20 +34,29 @@ int match(const char* s, const char* restrict r) {
     }
 }
 
-void shift_left(AST* a, size_t n, unsigned int shift) {
-    for(int i = 0; i < n - shift; i++) {
+void shift_left(AST* a, size_t n, size_t shift) {
+    if(shift == 0 || n == 0) return;
+
+    if(shift >= n) {
+        for (size_t i = 0; i < n; i++)
+            a[i] = (AST){0};
+        return;
+    }
+
+    for(size_t i = 0; i < n - shift; i++)
         a[i] = a[i + shift];
-    }
-    for(int i = n - shift; i < n; i++) {
+
+    for(size_t i = n - shift; i < n; i++)
         a[i] = (AST){0};
-    }
 }
 
 int enum_tokens(AST* tok_list, char* data) {
     char* tok = strtok(data, " ");
     int i = 0, chr = 0;
     while(tok != NULL) {
-        if(strcmp(tok, "*") == 0) tok_list[i].token = AST_MUL;
+        if(strcmp(tok, "(") == 0) tok_list[i].token = AST_OPEN_PAREN;
+        else if(strcmp(tok, ")") == 0) tok_list[i].token = AST_CLOSE_PAREN;
+        else if(strcmp(tok, "*") == 0) tok_list[i].token = AST_MUL;
         else if(strcmp(tok, "/") == 0) tok_list[i].token = AST_DIV;
         else if(strcmp(tok, "+") == 0) tok_list[i].token = AST_SUM;
         else if(strcmp(tok, "-") == 0) tok_list[i].token = AST_DIF;
@@ -84,7 +95,7 @@ int do_pass(AST* tok_list, size_t sz, enum ast_token* types, size_t types_sz) {
     while(1) {
         for(int i = 0; i < sz; i++) {
             AST* tok = &tok_list[i];
-            if(contains(tok->token, types, types_sz) && ast_is_leaf(tok)) {
+            if(ast_is_leaf(tok) && contains(tok->token, types, types_sz)) {
                 if(i == 0) {
                     fprintf(stderr, "Expected lvalue at %d:%d\n", tok->line + 1, tok->col + 1);
                     return -1;
@@ -138,10 +149,108 @@ int do_pass(AST* tok_list, size_t sz, enum ast_token* types, size_t types_sz) {
         int num = 0;
         for(int i = 0; i < sz; i++) {
             if(contains(tok_list[i].token, types, types_sz)) num++;
+            printf("%d: ", i);
+            ast_print(&tok_list[i]);
         }
 
         if(num <= 1) break;
     }
+    return 0;
+}
+
+int do_grouping_pass(AST* tok_list, size_t sz, enum ast_token* starts, size_t starts_sz, enum ast_token* ends, size_t ends_sz) {
+    while(1) {
+        for(int i = 0; i < sz; i++) {
+            AST* tok = &tok_list[i];
+            if(ast_is_leaf(tok) && contains(tok->token, starts, starts_sz)) {
+                printf("Found grouping start at %d\n", i);
+                if(i + 1 >= sz) {
+                    fprintf(stderr, "Grouping symbols empty at %d:%d\n", tok->line + 1, tok->col + 1);
+                    return -1;
+                }
+
+                int end = -1;
+                int c = 1;
+                for(int j = i + 1; j < sz; j++) {
+                    if(ast_is_leaf(&tok_list[j]) && contains(tok_list[j].token, ends, ends_sz)) {
+                        c--;
+                        printf("Found grouping end at %d (%d)\n", j, c);
+                        if(c == 0) {
+                            end = j;
+                            printf("End at %d\n", end);
+                            break;
+                        }
+                    } else if(ast_is_leaf(&tok_list[j]) && contains(tok_list[j].token, starts, starts_sz)) {
+                        c++;
+                        printf("Found grouping start at %d (%d)\n", j, c);
+                    }
+                }
+
+                if(end == -1) {
+                    fprintf(stderr, "Grouping symbol start without end at %d:%d\n", tok->line + 1, tok->col + 1);
+                    return -1;
+                }
+
+                tok_list[end] = (AST){0};
+
+                printf("Doing passes from %d for %d\n", i + 1, end - i - 1);
+
+                if(do_all_passes(&tok_list[i + 1], end - i - 1) < 0) return -1;
+                printf("Done\n");
+
+                AST tmp = tok_list[i + 1];
+
+                shift_left(&tok_list[i], sz - i, end - i);
+
+                *tok = tmp;
+
+                for(int j = 0; j < sz; j++) {
+                    printf("%d: ", j);
+                    ast_print(&tok_list[j]);
+                }
+
+                i--;
+            } else if(ast_is_leaf(tok) && contains(tok->token, ends, ends_sz)) {
+                fprintf(stderr, "Unexpected grouping symbol end at %d:%d\n", tok->line + 1, tok->col + 1);
+                return -1;
+            }
+        }
+
+        int num = 0;
+        for(int i = 0; i < sz; i++) {
+            if(
+                contains(tok_list[i].token, starts, starts_sz) ||
+                contains(tok_list[i].token, ends, ends_sz)
+            ) num++;
+            printf("%d: ", i);
+            ast_print(&tok_list[i]);
+        }
+
+        if(num <= 1) break;
+    }
+    return 0;
+}
+
+int do_all_passes(AST* tok_list, size_t sz) {
+    for(int j = 0; j < sz; j++) {
+        printf("%d: ", j);
+        ast_print(&tok_list[j]);
+    }
+    // Parentheses
+    printf("Parens (\n");
+    if(do_grouping_pass(tok_list, sz,
+        (enum ast_token[]){AST_OPEN_PAREN}, 1, (enum ast_token[]){AST_CLOSE_PAREN}, 1
+    ) < 0) return -1;
+    printf("Parens )\n");
+
+    // MUL/DIV
+    printf("MUL/DIV\n");
+    if(do_pass(tok_list, sz, (enum ast_token[]){AST_MUL, AST_DIV}, 2) < 0) return -1;
+
+    // SUM/DIF
+    printf("SUM/DIF\n");
+    if(do_pass(tok_list, sz, (enum ast_token[]){AST_SUM, AST_DIF}, 2) < 0) return -1;
+
     return 0;
 }
 
@@ -155,11 +264,7 @@ AST* parse(char* data) {
     if(ret < 0) return NULL;
     sz = (size_t) ret;
 
-    // MUL/DIV
-    if(do_pass(tok_list, sz, (enum ast_token[]){AST_MUL, AST_DIV}, 2) < 0) return NULL;
-
-    // SUM/DIF
-    if(do_pass(tok_list, sz, (enum ast_token[]){AST_SUM, AST_DIF}, 2) < 0) return NULL;
+    if(do_all_passes(tok_list, sz) < 0) return NULL;
 
     AST* top = malloc(sizeof(AST));
     *top = tok_list[0];

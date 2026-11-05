@@ -10,6 +10,8 @@ extern char* ast_names[];
 struct AST {
     enum ast_token {
         AST_NONE,
+        AST_OPEN_PAREN,
+        AST_CLOSE_PAREN,
         AST_MUL,
         AST_DIV,
         AST_SUM,

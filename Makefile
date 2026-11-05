@@ -1,8 +1,8 @@
 CC = gcc
-CFLAGS = -O0 -Wall -Werror -g
+CFLAGS = -O2 -Wall -Werror -g
 
 LD = $(CC)
-LDFLAGS = -O0 -g
+LDFLAGS = -O2 -g
 
 OBJS = \
 ast.o \

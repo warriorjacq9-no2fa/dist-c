@@ -29,42 +29,43 @@ void ast_free(AST* ast) {
 void _ast_print(AST* ast) {
     if(ast == NULL) return;
     switch(ast->token) {
-        case AST_NUMBER: {
+        case AST_NUMBER:
             printf("%d", ast->data.AST_NUMBER);
             break;
-        }
-        case AST_SUM: {
+        case AST_SUM:
             printf("(+ ");
             _ast_print(ast->left);
             printf(" ");
             _ast_print(ast->right);
             printf(")");
             break;
-        }
-        case AST_DIF: {
+        case AST_DIF:
             printf("(- ");
             _ast_print(ast->left);
             printf(" ");
             _ast_print(ast->right);
             printf(")");
             break;
-        }
-        case AST_MUL: {
+        case AST_MUL:
             printf("(* ");
             _ast_print(ast->left);
             printf(" ");
             _ast_print(ast->right);
             printf(")");
             break;
-        }
-        case AST_DIV: {
+        case AST_DIV:
             printf("(/ ");
             _ast_print(ast->left);
             printf(" ");
             _ast_print(ast->right);
             printf(")");
             break;
-        }
+        case AST_OPEN_PAREN:
+            printf("(");
+            break;
+        case AST_CLOSE_PAREN:
+            printf(")");
+            break;
         default: break;
     }
 }
