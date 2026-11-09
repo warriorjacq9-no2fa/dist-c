@@ -1,5 +1,4 @@
-var i;
-var s;
+var i, s;
 begin
   i := 0;
   s := 0;

@@ -4,19 +4,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 static size_t line, pos;
 static char* data;
 static size_t data_sz;
+static size_t peek_pos;
 
-enum token get_next_token(size_t* pos, size_t* line) {
+enum token get_next_token(size_t* pos) {
     if(*pos >= data_sz) return TOK_EOF;
     char c = data[(*pos)++];
     if(c == '\n') {
-        (*line)++;
-        return get_next_token(pos, line);
+        return get_next_token(pos);
     }
-    if(isspace(c)) return get_next_token(pos, line);
+    if(isspace(c)) return get_next_token(pos);
     if(c == '(') return TOK_LPAREN;
     if(c == ')') return TOK_RPAREN;
     if(c == '*') return TOK_TIMES;
@@ -78,8 +79,16 @@ enum token get_next_token(size_t* pos, size_t* line) {
     return TOK_IDENT;
 }
 
+size_t get_line(size_t pos) {
+    size_t lines = 0;
+    for(size_t i = 0; i < pos; i++) {
+        if(data[i] == '\n') lines++;
+    }
+    return lines + 1;
+}
+
 void error(const char* msg) {
-    fprintf(stderr, "%s at line %lu\n", msg, line);
+    fprintf(stderr, "%s at line %lu\n", msg, peek_pos ? get_line(peek_pos) : get_line(pos));
     exit(1);
 }
 
@@ -91,16 +100,16 @@ void lex_init(char* d) {
 }
 
 enum token lex_consume() {
-    enum token ret = get_next_token(&pos, &line);
-    printf("Consume %s at line %lu\n", token_strings[ret], line);
+    peek_pos = 0;
+    enum token ret = get_next_token(&pos);
+    printf("Consume %s at line %lu\n", token_strings[ret], get_line(pos));
     return ret;
 }
 
 enum token lex_peek() {
-    size_t tmp = pos;
-    size_t tmp_line = 0;
-    enum token ret = get_next_token(&tmp, &tmp_line);
-    printf("Peek %s at line %lu\n", token_strings[ret], line);
+    peek_pos = pos;
+    enum token ret = get_next_token(&peek_pos);
+    printf("Peek %s at line %lu\n", token_strings[ret], get_line(peek_pos));
     return ret;
 }
 
