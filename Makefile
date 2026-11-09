@@ -1,34 +1,24 @@
-CPP = g++
-CPPFLAGS = -O2 -I/usr/include/antlr4-runtime
+CC = gcc
+CFLAGS = -O2 -Wall -Werror
 
-LD = $(CPP)
+LD = $(CC)
 LDFLAGS = -O2
-LIBS = -lantlr4-runtime -lpthread
+LIBS = 
 
 OBJS = \
-.antlr/DistCLexer.o \
-.antlr/DistCParser.o \
-.antlr/DistCParserBaseVisitor.o \
-.antlr/DistCParserVisitor.o \
-DistCLexerBase.o \
-DistCParserBase.o \
-SymbolTable.o \
+parser.o \
+lexer.o \
 main.o
 
 .PHONY: all clean
 
-all: antlr4 main
-
-antlr4:
-	mkdir -p .antlr
-	antlr4 -Dlanguage=Cpp -no-listener -no-visitor -o .antlr -lib .antlr DistCLexer.g4
-	antlr4 -Dlanguage=Cpp -no-listener -visitor -o .antlr -lib .antlr DistCParser.g4
+all: main
 
 main: $(OBJS)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-%.o: %.cpp
-	$(CPP) $(CPPFLAGS) -c $^ -o $@
+%.o: %.c
+	$(CC) $(CFLAGS) -c $^ -o $@
 
 clean:
-	rm -rf .antlr main
+	rm -rf $(OBJS) .main
