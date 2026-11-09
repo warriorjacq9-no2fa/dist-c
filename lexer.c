@@ -102,14 +102,12 @@ void lex_init(char* d) {
 enum token lex_consume() {
     peek_pos = 0;
     enum token ret = get_next_token(&pos);
-    printf("Consume %s at line %lu\n", token_strings[ret], get_line(pos));
     return ret;
 }
 
 enum token lex_peek() {
     peek_pos = pos;
     enum token ret = get_next_token(&peek_pos);
-    printf("Peek %s at line %lu\n", token_strings[ret], get_line(peek_pos));
     return ret;
 }
 

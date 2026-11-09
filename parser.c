@@ -24,7 +24,6 @@ bool expect(enum token t) {
 }
 
 void factor() {
-    printf("factor\n");
     if (accept(TOK_IDENT) || accept(TOK_NUMBER)) {
         return;
     }
@@ -38,7 +37,6 @@ void factor() {
 }
 
 void term() {
-    printf("term\n");
     factor();
     while (lex_peek() == TOK_TIMES || lex_peek() == TOK_SLASH) {
         lex_consume();
@@ -47,7 +45,6 @@ void term() {
 }
 
 void expression() {
-    printf("expression\n");
     if (lex_peek() == TOK_PLUS || lex_peek() == TOK_MINUS) {
         lex_consume();
     }
@@ -59,7 +56,6 @@ void expression() {
 }
 
 void condition() {
-    printf("condition\n");
     if (accept(TOK_ODD)) {
         expression();
         return;
@@ -75,7 +71,6 @@ void condition() {
 }
 
 void statement() {
-    printf("statement\n");
     if (accept(TOK_IDENT)) {
         expect(TOK_BECOMES);
         expression();
@@ -101,7 +96,6 @@ void statement() {
 }
 
 void block() {
-    printf("block\n");
     if (accept(TOK_CONST)) {
         do {
             expect(TOK_IDENT);
@@ -126,7 +120,6 @@ void block() {
 }
 
 void program() {
-    printf("program\n");
     block();
     expect(TOK_PERIOD);
 }
