@@ -1,4 +1,3 @@
-#include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include "lexer.h"
@@ -29,13 +28,13 @@ struct ast* factor() {
     if(accept(TOK_NUMBER)) {
         struct ast* ast = ast_new();
         ast->type = AST_NUMBER;
-        ast->number.value = 0; // TODO: values
+        ast->number.value = lex_get_number();
         return ast;
     }
     if(accept(TOK_IDENT)) {
         struct ast* ast = ast_new();
         ast->type = AST_IDENT;
-        ast->ident.value = strdup("TODO: values");
+        ast->ident.value = lex_get_ident();
         return ast;
     }
     if(accept(TOK_LPAREN)) {
@@ -114,7 +113,7 @@ struct ast* statement() {
 
         new->binary.left = ast_new();
         new->binary.left->type = AST_IDENT;
-        new->binary.left->ident.value = strdup("TODO: values");
+        new->binary.left->ident.value = lex_get_ident();
 
         new->binary.right = expression();
 
@@ -128,7 +127,7 @@ struct ast* statement() {
 
         new->binary.left = ast_new();
         new->binary.left->type = AST_IDENT;
-        new->binary.left->ident.value = strdup("TODO: values");
+        new->binary.left->ident.value = lex_get_ident();
 
         return new;
     } else if(accept(TOK_BEGIN)) {
@@ -185,11 +184,11 @@ struct ast* parse_const() {
 
             new->binary.left = ast_new();
             new->binary.left->type = AST_IDENT;
-            new->binary.left->ident.value = strdup("TODO: values");
+            new->binary.left->ident.value = lex_get_ident();
 
             new->binary.right = ast_new();
             new->binary.right->type = AST_NUMBER;
-            new->binary.right->number.value = 0; // TODO: values
+            new->binary.right->number.value = lex_get_number();
 
             struct ast* top = ast_new();
             top->type = AST_BINARY;
@@ -219,7 +218,7 @@ struct ast* parse_var() {
 
             new->binary.right = ast_new();
             new->binary.right->type = AST_IDENT;
-            new->binary.right->ident.value = strdup("TODO: values");
+            new->binary.right->ident.value = lex_get_ident();
             
             left = new;
         } while (accept(TOK_COMMA));
@@ -247,7 +246,7 @@ struct ast* parse_proc() {
 
         right->binary.left = ast_new();
         right->binary.left->type = AST_IDENT;
-        right->binary.left->ident.value = strdup("TODO: values");
+        right->binary.left->ident.value = lex_get_ident();
 
         right->binary.right = block();
         expect(TOK_SEMICOLON);

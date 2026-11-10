@@ -43,4 +43,7 @@ void error(const char* msg);
 enum token lex_consume();
 enum token lex_peek();
 
+int lex_get_number();
+char* lex_get_ident();
+
 #endif

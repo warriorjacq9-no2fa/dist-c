@@ -10,14 +10,17 @@ static size_t line, pos;
 static char* data;
 static size_t data_sz;
 static size_t peek_pos;
+static int num_val;
+static char* ident_val;
 
 enum token get_next_token(size_t* pos) {
+top:
     if(*pos >= data_sz) return TOK_EOF;
     char c = data[(*pos)++];
     if(c == '\n') {
-        return get_next_token(pos);
+        goto top;
     }
-    if(isspace(c)) return get_next_token(pos);
+    if(isspace(c)) goto top;
     if(c == '(') return TOK_LPAREN;
     if(c == ')') return TOK_RPAREN;
     if(c == '*') return TOK_TIMES;
@@ -52,15 +55,26 @@ enum token get_next_token(size_t* pos) {
     if(c == ';') return TOK_SEMICOLON;
     if(c == ',') return TOK_COMMA;
     if(c == '.') return TOK_PERIOD;
-    if(isdigit(c)) {
-        while(isdigit(data[*pos])) (*pos)++;
-        return TOK_NUMBER;
-    }
     (*pos)--;
     char tok[128];
     size_t i = *pos;
     char t = data[i];
+    if(isdigit(t)) {
+        while(1) {
+            t = data[i];
+            if(isdigit(t)) {
+                tok[i - *pos] = t;
+                i++;
+            } else break;
+        }
+        tok[i - *pos] = '\0';
+        *pos = i;
+        num_val = atoi(tok);
+        return TOK_NUMBER;
+    }
+    bool identifier = false;
     if(isalpha(t) || t == '_') {
+        identifier = true;
         while(1) {
             t = data[i];
             if(isalpha(t) || isdigit(t) || t == '_') {
@@ -83,7 +97,23 @@ enum token get_next_token(size_t* pos) {
     if(strcmp(tok, "var") == 0) return TOK_VAR;
     if(strcmp(tok, "while") == 0) return TOK_WHILE;
 
-    return TOK_IDENT;
+    if(identifier) {
+        ident_val = strdup(tok);
+        return TOK_IDENT;
+    } else {
+        char msg[256];
+        snprintf(msg, 256, "Unkown token %s", tok);
+        error(msg);
+        return -1;
+    }
+}
+
+int lex_get_number() {
+    return num_val;
+}
+
+char* lex_get_ident() {
+    return ident_val;
 }
 
 size_t get_line(size_t pos) {
