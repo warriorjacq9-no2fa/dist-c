@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include "lexer.h"
 #include "ast.h"
 
 struct ast* ast_new() {
@@ -21,4 +23,31 @@ void ast_free(struct ast* ast) {
     }
 
     free(ast);
+}
+
+void _ast_print(struct ast* ast) {
+    if(ast == NULL) return;
+    switch(ast->type) {
+        case AST_NUMBER:
+            printf("%d", ast->number.value);
+            break;
+        case AST_IDENT:
+            printf("%s", ast->ident.value);
+            break;
+        case AST_BINARY:
+            if(ast->binary.tok >= 0 && ast->binary.tok < TOK_EOF)
+                printf("(%s ", token_strings[ast->binary.tok]);
+            else
+                printf("( ");
+            _ast_print(ast->binary.left);
+            printf(" ");
+            _ast_print(ast->binary.right);
+            printf(")");
+            break;
+    }
+}
+
+void ast_print(struct ast* ast) {
+    _ast_print(ast);
+    printf("\n");
 }

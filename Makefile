@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O2 -Wall -Werror
+CFLAGS = -O2 -Wall -Werror -g
 
 LD = $(CC)
 LDFLAGS = -O2
@@ -8,6 +8,7 @@ LIBS =
 OBJS = \
 parser.o \
 lexer.o \
+ast.o \
 main.o
 
 .PHONY: all clean

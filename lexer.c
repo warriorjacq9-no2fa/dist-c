@@ -28,7 +28,14 @@ enum token get_next_token(size_t* pos) {
         (*pos)++;
         return TOK_BECOMES;
     }
-    if(c == '=') return TOK_EQ;
+    if(c == '=') {
+        if(data[*pos] == '=') {
+            (*pos)++;
+            return TOK_EQUAL;
+        } else {
+            return TOK_ASSGN;
+        }
+    }
     if(c == '#') return TOK_NEQ;
     if(c == '<') {
         if(data[*pos] == '=') {
@@ -120,7 +127,8 @@ const char* const token_strings[] = {
     "-",
     ":=",
     "=",
-    "!=",
+    "==",
+    "#",
     "<",
     "<=",
     ">",

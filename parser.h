@@ -1,6 +1,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-void program();
+#include "ast.h"
+
+struct ast* program();
 
 #endif

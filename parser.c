@@ -86,7 +86,7 @@ struct ast* condition() {
         return expression();
     }
     struct ast* left = expression();
-    if (lex_peek() == TOK_EQ || lex_peek() == TOK_NEQ || lex_peek() == TOK_LESS || lex_peek() == TOK_LEQ || lex_peek() == TOK_GT || lex_peek() == TOK_GEQ) {
+    if (lex_peek() == TOK_EQUAL || lex_peek() == TOK_NEQ || lex_peek() == TOK_LESS || lex_peek() == TOK_LEQ || lex_peek() == TOK_GT || lex_peek() == TOK_GEQ) {
         enum token t = lex_consume();
         struct ast* new = ast_new();
 
@@ -94,6 +94,8 @@ struct ast* condition() {
         new->binary.tok = t;
         new->binary.left = left;
         new->binary.right = expression();
+
+        left = new;
     } else {
         error("Syntax error: invalid operator in condition");
         lex_consume();
@@ -138,6 +140,8 @@ struct ast* statement() {
             new->binary.tok = TOK_BEGIN;
             new->binary.left = left;
             new->binary.right = statement();
+
+            left = new;
         }
         expect(TOK_END);
         return left;
@@ -173,11 +177,11 @@ struct ast* parse_const() {
         struct ast* left = NULL;
         do {
             expect(TOK_IDENT);
-            expect(TOK_EQ);
+            expect(TOK_ASSGN);
             expect(TOK_NUMBER);
             struct ast* new = ast_new();
             new->type = AST_BINARY;
-            new->binary.tok = TOK_EQ;
+            new->binary.tok = TOK_ASSGN;
 
             new->binary.left = ast_new();
             new->binary.left->type = AST_IDENT;
@@ -189,7 +193,7 @@ struct ast* parse_const() {
 
             struct ast* top = ast_new();
             top->type = AST_BINARY;
-            top->binary.tok = TOK_CONST;
+            top->binary.tok = -1;
 
             top->binary.left = left;
             top->binary.right = new;
@@ -255,13 +259,48 @@ struct ast* parse_proc() {
 }
 
 struct ast* block() {
-    struct ast* a = parse_const();
-    a = parse_var();
-    a = parse_proc();
-    statement();
+    struct ast* left;
+    struct ast* ast_const = parse_const();
+    struct ast* ast_var = parse_var();
+    if(ast_const) {
+        if(ast_var) {
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.tok = -1;
+            new->binary.left = ast_const;
+            new->binary.right = ast_var;
+            left = new;
+        } else {
+            left = ast_const;
+        }
+    } else {
+        if(ast_var) {
+            left = ast_var;
+        } else {
+            left = NULL;
+        }
+    }
+    struct ast* ast_proc = parse_proc();
+    if(ast_proc) {
+        struct ast* new = ast_new();
+        new->type = AST_BINARY;
+        new->binary.tok = -1;
+        new->binary.left = left;
+        new->binary.right = ast_proc;
+        left = new;
+    }
+    struct ast* new = ast_new();
+    new->type = AST_BINARY;
+    new->binary.tok = -1;
+    new->binary.left = left;
+    new->binary.right = statement();
+    left = new;
+
+    return left;
 }
 
-void program() {
-    block();
+struct ast* program() {
+    struct ast* ast = block();
     expect(TOK_PERIOD);
+    return ast;
 }

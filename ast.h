@@ -18,5 +18,6 @@ struct ast {
 };
 
 struct ast* ast_new();
+void ast_print(struct ast* ast);
 
 #endif
