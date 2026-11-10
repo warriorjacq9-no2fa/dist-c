@@ -25,7 +25,7 @@ void ast_free(struct ast* ast) {
     free(ast);
 }
 
-void _ast_print(struct ast* ast) {
+void _ast_print(struct ast* ast, int indent) {
     if(ast == NULL) return;
     switch(ast->type) {
         case AST_NUMBER:
@@ -36,18 +36,22 @@ void _ast_print(struct ast* ast) {
             break;
         case AST_BINARY:
             if(ast->binary.tok >= 0 && ast->binary.tok < TOK_EOF)
-                printf("(%s ", token_strings[ast->binary.tok]);
+                printf("(%s\n", token_strings[ast->binary.tok]);
             else
-                printf("( ");
-            _ast_print(ast->binary.left);
-            printf(" ");
-            _ast_print(ast->binary.right);
+                printf("(\n");
+            for(int i = 0; i < indent; i++) printf(" ");
+            _ast_print(ast->binary.left, indent + 4);
+            printf("\n");
+            for(int i = 0; i < indent; i++) printf(" ");
+            _ast_print(ast->binary.right,  indent + 4);
+            printf("\n");
+            for(int i = 0; i < indent - 4; i++) printf(" ");
             printf(")");
             break;
     }
 }
 
 void ast_print(struct ast* ast) {
-    _ast_print(ast);
+    _ast_print(ast, 4);
     printf("\n");
 }
