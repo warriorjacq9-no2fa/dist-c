@@ -7,7 +7,7 @@ decl = ? empty ?
     | func_decl
 ;
 
-var_decl = type, ident, [ "=", expr ]
+var_decl = type, ident, { "[", [ expr ], "]" }, [ "=", expr ]
 ;
 
 func_proto = type, ident, "(", [ arg_list ], ")"
@@ -159,7 +159,7 @@ expr_0
     | "(", expr, ")"
 ;
 
-type = ident
+type = ident, { "*" }
 ;
 
 ident = ? /[a-zA-Z_][a-zA-Z0-9_]*/ ?
