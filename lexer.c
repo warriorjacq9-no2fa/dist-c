@@ -12,11 +12,13 @@ static size_t data_sz;
 static size_t peek_pos;
 static int num_val;
 static char* ident_val;
+static size_t last_len;
 
 enum token get_next_token(size_t* pos) {
 top:
     if(*pos >= data_sz) return TOK_EOF;
     char c = data[(*pos)++];
+    last_len = 1;
     if(c == '\n') {
         goto top;
     }
@@ -169,6 +171,7 @@ top:
         }
         tok[i] = '\0';
         num_val = atoi(tok);
+        last_len = i;
         return TOK_NUMBER;
     }
     if(isalpha(c) || c == '_') {
@@ -181,6 +184,7 @@ top:
             tok[i++] = data[(*pos)++];
         }
         tok[i] = '\0';
+        last_len = i;
         
         if(strcmp(tok, "break") == 0) return TOK_BREAK;
         if(strcmp(tok, "case") == 0) return TOK_CASE;
@@ -239,6 +243,15 @@ enum token lex_peek() {
     peek_pos = pos;
     enum token ret = get_next_token(&peek_pos);
     return ret;
+}
+
+void lex_back() {
+    pos -= last_len;
+    last_len = 0;
+}
+
+void lex_back_n(size_t n) {
+    pos -= n;
 }
 
 const char* const token_strings[] = {

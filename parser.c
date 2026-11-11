@@ -224,13 +224,18 @@ struct ast* expr_2() {
                 lex_consume();
                 struct ast* t = type();
                 if(t == NULL) error("Expected expression"); // Possibly remove
-                expect(TOK_RPAREN);
-
-                struct ast* new = ast_new();
-                new->type = AST_BINARY;
-                new->binary.op = OP_TYPECAST;
-                new->binary.left = t;
-                left_expand(&left, &bottom, new);
+                if(accept(TOK_RPAREN)) {
+                    struct ast* new = ast_new();
+                    new->type = AST_BINARY;
+                    new->binary.op = OP_TYPECAST;
+                    new->binary.left = t;
+                    left_expand(&left, &bottom, new);
+                } else { // Could be a parenthesized expression
+                    lex_back();
+                    lex_back_n(1);
+                    ast_free(t);
+                    goto _next;
+                }
                 break;
             }
             case TOK_STAR: {

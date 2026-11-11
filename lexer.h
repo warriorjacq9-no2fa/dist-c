@@ -1,6 +1,8 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include <stddef.h>
+
 extern const char* const token_strings[];
 
 enum token {
@@ -85,6 +87,8 @@ void lex_init(char* data);
 [[noreturn]] void error(const char* msg);
 enum token lex_consume();
 enum token lex_peek();
+void lex_back();
+void lex_back_n(size_t n);
 
 int lex_get_number();
 char* lex_get_ident();
