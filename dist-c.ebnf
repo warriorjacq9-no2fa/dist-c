@@ -53,7 +53,10 @@ for
 goto = "goto", ident, ";"
 ;
 
-if = "if", "(", expr, ")", stmt,
+if
+    = "if", "(", expr, ")", stmt,
+    { "else", "if", "(", expr, ")", stmt },
+    [ "else", stmt ]
 ;
 
 return = "return", [ expr ], ";"
