@@ -110,6 +110,7 @@ struct ast* expr_1() {
                         if(arg == NULL) error("Expected expression");
                         args[i++] = arg;
                     }
+                    expect(TOK_RPAREN);
                     arg_list->list.sz = i;
                     arg_list->list.list = malloc(i * sizeof(struct ast*));
                     memcpy(arg_list->list.list, args, i * sizeof(struct ast*));
@@ -176,6 +177,7 @@ struct ast* expr_2() {
                 struct ast* new = ast_new();
                 new->type = AST_UNARY;
                 new->unary.op = OP_PRE_INC;
+                left_expand(&left, &bottom, new);
                 break;
             }
             case TOK_DEC: {
@@ -184,6 +186,7 @@ struct ast* expr_2() {
                 new->type = AST_UNARY;
                 new->unary.op = OP_PRE_DEC;
                 left_expand(&left, &bottom, new);
+                break;
             }
             case TOK_PLUS: {
                 lex_consume();
@@ -191,6 +194,7 @@ struct ast* expr_2() {
                 new->type = AST_UNARY;
                 new->unary.op = OP_UNARY_PLUS;
                 left_expand(&left, &bottom, new);
+                break;
             }
             case TOK_MINUS: {
                 lex_consume();
@@ -198,6 +202,7 @@ struct ast* expr_2() {
                 new->type = AST_UNARY;
                 new->unary.op = OP_UNARY_MINUS;
                 left_expand(&left, &bottom, new);
+                break;
             }
             case TOK_BOOLINV: {
                 lex_consume();
@@ -205,6 +210,7 @@ struct ast* expr_2() {
                 new->type = AST_UNARY;
                 new->unary.op = OP_BOOLINV;
                 left_expand(&left, &bottom, new);
+                break;
             }
             case TOK_LOGINV: {
                 lex_consume();
@@ -212,6 +218,7 @@ struct ast* expr_2() {
                 new->type = AST_UNARY;
                 new->unary.op = OP_LOGINV;
                 left_expand(&left, &bottom, new);
+                break;
             }
             case TOK_LPAREN: {
                 lex_consume();
@@ -224,6 +231,7 @@ struct ast* expr_2() {
                 new->binary.op = OP_TYPECAST;
                 new->binary.left = t;
                 left_expand(&left, &bottom, new);
+                break;
             }
             case TOK_STAR: {
                 lex_consume();
@@ -231,6 +239,7 @@ struct ast* expr_2() {
                 new->type = AST_UNARY;
                 new->unary.op = OP_DEREF;
                 left_expand(&left, &bottom, new);
+                break;
             }
             case TOK_AMPERSAND: {
                 lex_consume();
@@ -238,6 +247,7 @@ struct ast* expr_2() {
                 new->type = AST_UNARY;
                 new->unary.op = OP_REF;
                 left_expand(&left, &bottom, new);
+                break;
             }
             default: goto _next;
         }

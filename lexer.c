@@ -175,7 +175,9 @@ top:
         char tok[128];
         size_t i = 0;
         tok[i++] = c;
-        while(*pos < data_sz && isdigit(data[*pos])) {
+        while(*pos < data_sz &&
+            (isalpha(data[*pos]) || isdigit(data[*pos]) || data[*pos] == '_')
+        ) {
             tok[i++] = data[(*pos)++];
         }
         tok[i] = '\0';
@@ -195,7 +197,7 @@ top:
         ident_val = strdup(tok);
         return TOK_IDENT;
     }
-    
+
     error("Unkown token");
 }
 
