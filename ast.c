@@ -1,8 +1,44 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "lexer.h"
 #include "ast.h"
+
+static const char* const op_strings[] = {
+    "type",
+    "post",
+    "x++",
+    "x--",
+    "call",
+    "args",
+    "[]",
+    "++x",
+    "--x",
+    "+x",
+    "-x",
+    "!",
+    "~",
+    "(cast)",
+    "*x",
+    "&x",
+    "*",
+    "/",
+    "%",
+    "+",
+    "-",
+    "<<",
+    ">>",
+    "<",
+    "<=",
+    ">",
+    ">=",
+    "==",
+    "!=",
+    "&",
+    "^",
+    "|",
+    "&&",
+    "||"
+};
 
 struct ast* ast_new() {
     struct ast* ast = malloc(sizeof(struct ast));
@@ -11,14 +47,23 @@ struct ast* ast_new() {
 }
 
 void ast_free(struct ast* ast) {
+    if(ast == NULL) return;
     switch(ast->type) {
         case AST_NUMBER: break;
         case AST_IDENT:
             free(ast->ident.value);
             break;
+        case AST_UNARY:
+            ast_free(ast->unary.next);
+            break;
         case AST_BINARY:
-            if(ast->binary.left) ast_free(ast->binary.left);
-            if(ast->binary.right) ast_free(ast->binary.right);
+            ast_free(ast->binary.left);
+            ast_free(ast->binary.right);
+            break;
+        case AST_LIST:
+            for(size_t i = 0; i < ast->list.sz; i++) {
+                ast_free(ast->list.list[i]);
+            }
             break;
     }
 
@@ -34,9 +79,20 @@ void _ast_print(struct ast* ast, int indent) {
         case AST_IDENT:
             printf("%s", ast->ident.value);
             break;
+        case AST_UNARY:
+            if(ast->unary.op >= 0 && ast->unary.op < _OP_ENDOFLIST)
+                printf("(%s\n", op_strings[ast->binary.op]);
+            else
+                printf("(\n");
+            for(int i = 0; i < indent; i++) printf(" ");
+            _ast_print(ast->unary.next, indent + 4);
+            printf("\n");
+            for(int i = 0; i < indent - 4; i++) printf(" ");
+            printf(")");
+            break;
         case AST_BINARY:
-            if(ast->binary.tok >= 0 && ast->binary.tok < TOK_EOF)
-                printf("(%s\n", token_strings[ast->binary.tok]);
+            if(ast->binary.op >= 0 && ast->binary.op < _OP_ENDOFLIST)
+                printf("(%s\n", op_strings[ast->binary.op]);
             else
                 printf("(\n");
             for(int i = 0; i < indent; i++) printf(" ");
@@ -45,6 +101,19 @@ void _ast_print(struct ast* ast, int indent) {
             for(int i = 0; i < indent; i++) printf(" ");
             _ast_print(ast->binary.right,  indent + 4);
             printf("\n");
+            for(int i = 0; i < indent - 4; i++) printf(" ");
+            printf(")");
+            break;
+        case AST_LIST:
+            if(ast->list.op >= 0 && ast->list.op < _OP_ENDOFLIST)
+                printf("(%s\n", op_strings[ast->list.op]);
+            else
+                printf("(\n");
+            for(size_t idx = 0; idx < ast->list.sz; idx++) {
+                for(int i = 0; i < indent; i++) printf(" ");
+                _ast_print(ast->list.list[idx], indent + 4);
+                printf("\n");
+            }
             for(int i = 0; i < indent - 4; i++) printf(" ");
             printf(")");
             break;

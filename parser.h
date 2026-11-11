@@ -3,6 +3,6 @@
 
 #include "ast.h"
 
-struct ast* program();
+struct ast* expr();
 
 #endif

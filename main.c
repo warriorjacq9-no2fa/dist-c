@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     fclose(fp);
 
     lex_init(data);
-    struct ast* ast = program();
+    struct ast* ast = expr();
     ast_print(ast);
     return 0;
 }

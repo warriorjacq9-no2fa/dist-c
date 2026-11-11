@@ -22,4 +22,4 @@ main: $(OBJS)
 	$(CC) $(CFLAGS) -c $^ -o $@
 
 clean:
-	rm -rf $(OBJS) .main
+	rm -rf $(OBJS) main
