@@ -23,89 +23,191 @@ top:
     if(isspace(c)) goto top;
     if(c == '(') return TOK_LPAREN;
     if(c == ')') return TOK_RPAREN;
-    if(c == '*') return TOK_TIMES;
-    if(c == '/') return TOK_SLASH;
-    if(c == '+') return TOK_PLUS;
-    if(c == '-') return TOK_MINUS;
-    if(c == ':' && data[*pos] == '=') {
-        (*pos)++;
-        return TOK_BECOMES;
-    }
-    if(c == '=') {
-        if(data[*pos] == '=') {
+    if(c == '[') return TOK_LBRACKET;
+    if(c == ']') return TOK_RBRACKET;
+    if(c == '{') return TOK_LBRACE;
+    if(c == '}') return TOK_RBRACE;
+    if(c == '~') return TOK_LOGINV;
+    if(c == ',') return TOK_COMMA;
+    if(c == ';') return TOK_SEMICOLON;
+    if(c == ':') return TOK_COLON;
+    if(c == '?') return TOK_TERNARYIF;
+    if(c == '!') {
+        if(*pos < data_sz && data[*pos] == '=') {
             (*pos)++;
-            return TOK_EQUAL;
-        } else {
-            return TOK_ASSGN;
+            return TOK_NEQ;
         }
+        return TOK_BOOLINV;
     }
-    if(c == '#') return TOK_NEQ;
-    if(c == '<') {
-        if(data[*pos] == '=') {
+    if(c == '+') {
+        if(*pos < data_sz) {
+            if(data[*pos] == '=') {
+                (*pos)++;
+                return TOK_EQPLUS;
+            }
+            if(data[*pos] == '+') {
+                (*pos)++;
+                return TOK_INC;
+            }
+        }
+        return TOK_PLUS;
+    }
+    if(c == '-') {
+        if(*pos < data_sz) {
+            if(data[*pos] == '=') {
+                (*pos)++;
+                return TOK_EQMINUS;
+            }
+            if(data[*pos] == '-') {
+                (*pos)++;
+                return TOK_DEC;
+            }
+        }
+        return TOK_MINUS;
+    }
+    if(c == '*') {
+        if(*pos < data_sz && data[*pos] == '=') {
             (*pos)++;
-            return TOK_LEQ;
-        } else return TOK_LESS;
+            return TOK_EQMUL;
+        }
+        return TOK_STAR;
+    }
+    if(c == '/') {
+        if(*pos < data_sz && data[*pos] == '=') {
+            (*pos)++;
+            return TOK_EQDIV;
+        }
+        return TOK_DIV;
+    }
+    if(c == '%') {
+        if(*pos < data_sz && data[*pos] == '=') {
+            (*pos)++;
+            return TOK_EQMOD;
+        }
+        return TOK_MOD;
+    }
+    if(c == '&') {
+        if(*pos < data_sz) {
+            if(data[*pos] == '&') {
+                (*pos)++;
+                return TOK_BOOLAND;
+            }
+            if(data[*pos] == '=') {
+                (*pos)++;
+                return TOK_EQAND;
+            }
+        }
+        return TOK_AMPERSAND;
+    }
+    if(c == '^') {
+        if(*pos < data_sz && data[*pos] == '=') {
+            (*pos)++;
+            return TOK_EQXOR;
+        }
+        return TOK_XOR;
+    }
+    if(c == '|') {
+        if(*pos < data_sz) {
+            if(data[*pos] == '&') {
+                (*pos)++;
+                return TOK_BOOLOR;
+            }
+            if(data[*pos] == '=') {
+                (*pos)++;
+                return TOK_EQOR;
+            }
+        }
+        return TOK_OR;
+    }
+    if(c == '<') {
+        if(*pos < data_sz) {
+            if(data[*pos] == '<') {
+                (*pos)++;
+                if(*pos < data_sz && data[*pos] == '=') {
+                    (*pos)++;
+                    return TOK_EQLSHIFT;
+                }
+                return TOK_LSHIFT;
+            }
+            if(data[*pos] == '=') {
+                (*pos)++;
+                return TOK_LEQ;
+            }
+        }
+        return TOK_LESS;
     }
     if(c == '>') {
-        if(data[*pos] == '=') {
-            (*pos)++;
-            return TOK_GEQ;
-        } else return TOK_GT;
+        if(*pos < data_sz) {
+            if(data[*pos] == '>') {
+                (*pos)++;
+                if(*pos < data_sz && data[*pos] == '=') {
+                    (*pos)++;
+                    return TOK_EQRSHIFT;
+                }
+                return TOK_RSHIFT;
+            }
+            if(data[*pos] == '=') {
+                (*pos)++;
+                return TOK_GEQ;
+            }
+        }
+        return TOK_GREATER;
     }
-    if(c == ';') return TOK_SEMICOLON;
-    if(c == ',') return TOK_COMMA;
-    if(c == '.') return TOK_PERIOD;
-    (*pos)--;
-    char tok[128];
-    size_t i = *pos;
-    char t = data[i];
-    if(isdigit(t)) {
+    if(c == '=') {
+        if(*pos < data_sz && data[*pos] == '=') {
+            (*pos)++;
+            return TOK_EQUALTO;
+        }
+        return TOK_EQUALS;
+    }
+    if(isdigit(c)) {
+        char tok[128];
+        size_t i = 0;
+        tok[i++] = c;
+        char t = data[*pos + i];
         while(1) {
-            t = data[i];
+            t = data[*pos + i];
             if(isdigit(t)) {
-                tok[i - *pos] = t;
-                i++;
+                tok[i++] = t;
             } else break;
         }
-        tok[i - *pos] = '\0';
-        *pos = i;
+        tok[i] = '\0';
+        *pos += i;
         num_val = atoi(tok);
         return TOK_NUMBER;
     }
-    bool identifier = false;
-    if(isalpha(t) || t == '_') {
-        identifier = true;
+    if(isalpha(c) || c == '_') {
+        char tok[128];
+        size_t i = 0;
+        tok[i++] = c;
+        char t = data[*pos + i];
         while(1) {
-            t = data[i];
+            t = data[*pos + i];
             if(isalpha(t) || isdigit(t) || t == '_') {
-                tok[i - *pos] = t;
-                i++;
+                tok[i++] = t;
             } else break;
         }
-    }
-    tok[i - *pos] = '\0';
-    *pos = i;
-    if(strcmp(tok, "begin") == 0) return TOK_BEGIN;
-    if(strcmp(tok, "call") == 0) return TOK_CALL;
-    if(strcmp(tok, "const") == 0) return TOK_CONST;
-    if(strcmp(tok, "do") == 0) return TOK_DO;
-    if(strcmp(tok, "end") == 0) return TOK_END;
-    if(strcmp(tok, "if") == 0) return TOK_IF;
-    if(strcmp(tok, "odd") == 0) return TOK_ODD;
-    if(strcmp(tok, "procedure") == 0) return TOK_PROC;
-    if(strcmp(tok, "then") == 0) return TOK_THEN;
-    if(strcmp(tok, "var") == 0) return TOK_VAR;
-    if(strcmp(tok, "while") == 0) return TOK_WHILE;
+        tok[i] = '\0';
+        *pos += i;
+        
+        if(strcmp(tok, "break")) return TOK_BREAK;
+        if(strcmp(tok, "case")) return TOK_CASE;
+        if(strcmp(tok, "default")) return TOK_DEFAULT;
+        if(strcmp(tok, "do")) return TOK_DO;
+        if(strcmp(tok, "else")) return TOK_ELSE;
+        if(strcmp(tok, "for")) return TOK_FOR;
+        if(strcmp(tok, "goto")) return TOK_GOTO;
+        if(strcmp(tok, "if")) return TOK_IF;
+        if(strcmp(tok, "return")) return TOK_RETURN;
+        if(strcmp(tok, "switch")) return TOK_SWITCH;
+        if(strcmp(tok, "while")) return TOK_WHILE;
 
-    if(identifier) {
         ident_val = strdup(tok);
         return TOK_IDENT;
-    } else {
-        char msg[256];
-        snprintf(msg, 256, "Unkown token %s", tok);
-        error(msg);
-        return -1;
     }
+    
+    error("Unkown token");
+    return -1;
 }
 
 int lex_get_number() {
@@ -151,32 +253,58 @@ enum token lex_peek() {
 const char* const token_strings[] = {
     "left parentheses",
     "right parentheses",
-    "*",
-    "/",
-    "+",
-    "-",
-    ":=",
-    "=",
-    "==",
-    "#",
-    "<",
-    "<=",
-    ">",
-    ">=",
-    "semicolon",
+    "left bracket",
+    "right bracket",
+    "left brace",
+    "right brace",
+    "logical invert",
     "comma",
-    "period",
+    "semicolon",
+    "colon",
+    "question mark",
+    "boolean invert",
+    "not equal",
+    "plus",
+    "plus-equals",
+    "increment",
+    "minus",
+    "minus-equals",
+    "decrement",
+    "star",
+    "times-equals",
+    "divide",
+    "divide-equals",
+    "modulus",
+    "modulus-equals",
+    "ampersand",
+    "boolean and",
+    "and-equals",
+    "xor",
+    "xor-equals",
+    "or",
+    "boolean or",
+    "or-equals",
+    "less",
+    "left-shift-equals",
+    "left shift",
+    "less or equal",
+    "greater",
+    "right-shift-equals",
+    "right shift",
+    "greater or equal",
+    "equal",
+    "boolean equal",
     "number",
-    "begin",
-    "call",
-    "const",
+    "break",
+    "case",
+    "default",
     "do",
-    "end",
+    "else",
+    "for",
+    "goto",
     "if",
-    "odd",
-    "procedure",
-    "then",
-    "var",
+    "return",
+    "switch",
     "while",
     "identifier",
     "end of file"

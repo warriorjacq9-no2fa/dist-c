@@ -6,34 +6,77 @@ extern const char* const token_strings[];
 enum token {
     TOK_LPAREN,
     TOK_RPAREN,
-    TOK_TIMES,
-    TOK_SLASH,
-    TOK_PLUS,
-    TOK_MINUS,
-    TOK_BECOMES,
-    TOK_ASSGN,
-    TOK_EQUAL,
-    TOK_NEQ,
-    TOK_LESS,
-    TOK_LEQ,
-    TOK_GT,
-    TOK_GEQ,
-    TOK_SEMICOLON,
+    TOK_LBRACKET,
+    TOK_RBRACKET,
+    TOK_LBRACE,
+    TOK_RBRACE,
+
+    TOK_LOGINV,
     TOK_COMMA,
-    TOK_PERIOD,
+    TOK_SEMICOLON,
+    TOK_COLON,
+    TOK_TERNARYIF,
+
+    TOK_BOOLINV,
+    TOK_NEQ,
+
+    TOK_PLUS,
+    TOK_EQPLUS,
+    TOK_INC,
+
+    TOK_MINUS,
+    TOK_EQMINUS,
+    TOK_DEC,
+
+    TOK_STAR,
+    TOK_EQMUL,
+
+    TOK_DIV,
+    TOK_EQDIV,
+
+    TOK_MOD,
+    TOK_EQMOD,
+
+    TOK_AMPERSAND,
+    TOK_BOOLAND,
+    TOK_EQAND,
+
+    TOK_XOR,
+    TOK_EQXOR,
+
+    TOK_OR,
+    TOK_BOOLOR,
+    TOK_EQOR,
+
+    TOK_LESS,
+    TOK_EQLSHIFT,
+    TOK_LSHIFT,
+    TOK_LEQ,
+
+    TOK_GREATER,
+    TOK_EQRSHIFT,
+    TOK_RSHIFT,
+    TOK_GEQ,
+
+    TOK_EQUALS,
+    TOK_EQUALTO,
+
     TOK_NUMBER,
-    TOK_BEGIN,
-    TOK_CALL,
-    TOK_CONST,
+
+    TOK_BREAK,
+    TOK_CASE,
+    TOK_DEFAULT,
     TOK_DO,
-    TOK_END,
+    TOK_ELSE,
+    TOK_FOR,
+    TOK_GOTO,
     TOK_IF,
-    TOK_ODD,
-    TOK_PROC,
-    TOK_THEN,
-    TOK_VAR,
+    TOK_RETURN,
+    TOK_SWITCH,
     TOK_WHILE,
+
     TOK_IDENT,
+
     TOK_EOF,
 };
 
