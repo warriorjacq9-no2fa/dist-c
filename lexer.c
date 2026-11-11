@@ -108,7 +108,7 @@ top:
     }
     if(c == '|') {
         if(*pos < data_sz) {
-            if(data[*pos] == '&') {
+            if(data[*pos] == '|') {
                 (*pos)++;
                 return TOK_BOOLOR;
             }
@@ -164,15 +164,10 @@ top:
         char tok[128];
         size_t i = 0;
         tok[i++] = c;
-        char t = data[*pos + i];
-        while(1) {
-            t = data[*pos + i];
-            if(isdigit(t)) {
-                tok[i++] = t;
-            } else break;
+        while(*pos < data_sz && isdigit(data[*pos])) {
+            tok[i++] = data[(*pos)++];
         }
         tok[i] = '\0';
-        *pos += i;
         num_val = atoi(tok);
         return TOK_NUMBER;
     }
@@ -180,27 +175,22 @@ top:
         char tok[128];
         size_t i = 0;
         tok[i++] = c;
-        char t = data[*pos + i];
-        while(1) {
-            t = data[*pos + i];
-            if(isalpha(t) || isdigit(t) || t == '_') {
-                tok[i++] = t;
-            } else break;
+        while(*pos < data_sz && isdigit(data[*pos])) {
+            tok[i++] = data[(*pos)++];
         }
         tok[i] = '\0';
-        *pos += i;
         
-        if(strcmp(tok, "break")) return TOK_BREAK;
-        if(strcmp(tok, "case")) return TOK_CASE;
-        if(strcmp(tok, "default")) return TOK_DEFAULT;
-        if(strcmp(tok, "do")) return TOK_DO;
-        if(strcmp(tok, "else")) return TOK_ELSE;
-        if(strcmp(tok, "for")) return TOK_FOR;
-        if(strcmp(tok, "goto")) return TOK_GOTO;
-        if(strcmp(tok, "if")) return TOK_IF;
-        if(strcmp(tok, "return")) return TOK_RETURN;
-        if(strcmp(tok, "switch")) return TOK_SWITCH;
-        if(strcmp(tok, "while")) return TOK_WHILE;
+        if(strcmp(tok, "break") == 0) return TOK_BREAK;
+        if(strcmp(tok, "case") == 0) return TOK_CASE;
+        if(strcmp(tok, "default") == 0) return TOK_DEFAULT;
+        if(strcmp(tok, "do") == 0) return TOK_DO;
+        if(strcmp(tok, "else") == 0) return TOK_ELSE;
+        if(strcmp(tok, "for") == 0) return TOK_FOR;
+        if(strcmp(tok, "goto") == 0) return TOK_GOTO;
+        if(strcmp(tok, "if") == 0) return TOK_IF;
+        if(strcmp(tok, "return") == 0) return TOK_RETURN;
+        if(strcmp(tok, "switch") == 0) return TOK_SWITCH;
+        if(strcmp(tok, "while") == 0) return TOK_WHILE;
 
         ident_val = strdup(tok);
         return TOK_IDENT;

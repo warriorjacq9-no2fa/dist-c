@@ -74,7 +74,7 @@ void _ast_print(struct ast* ast, int indent) {
     if(ast == NULL) return;
     switch(ast->type) {
         case AST_NUMBER:
-            printf("%d", ast->number.value);
+            printf("$%d", ast->number.value);
             break;
         case AST_IDENT:
             printf("%s", ast->ident.value);
