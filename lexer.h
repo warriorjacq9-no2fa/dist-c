@@ -82,7 +82,7 @@ enum token {
 
 void lex_init(char* data);
 
-void error(const char* msg);
+[[noreturn]] void error(const char* msg);
 enum token lex_consume();
 enum token lex_peek();
 

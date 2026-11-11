@@ -207,7 +207,6 @@ top:
     }
     
     error("Unkown token");
-    return -1;
 }
 
 int lex_get_number() {
@@ -226,7 +225,7 @@ size_t get_line(size_t pos) {
     return lines + 1;
 }
 
-void error(const char* msg) {
+[[noreturn]] void error(const char* msg) {
     fprintf(stderr, "%s at line %lu\n", msg, peek_pos ? get_line(peek_pos) : get_line(pos));
     exit(1);
 }
