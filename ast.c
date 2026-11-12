@@ -37,7 +37,11 @@ static const char* const op_strings[] = {
     "^",
     "|",
     "&&",
-    "||"
+    "||",
+    "?",
+    ":",
+    "=",
+    ","
 };
 
 struct ast* ast_new() {

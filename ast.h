@@ -52,6 +52,13 @@ enum op {
     OP_BOOLAND,
 /* expr_12 */
     OP_BOOLOR,
+/* expr_13 */
+    OP_TERNARY,
+    OP_TERNARY_RES,
+/* expr_14 */
+    OP_ASSIGN,
+/* expr_15 */
+    OP_COMMA,
 
     _OP_ENDOFLIST
 };

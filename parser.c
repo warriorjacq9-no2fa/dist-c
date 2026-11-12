@@ -577,6 +577,269 @@ struct ast* expr_12() {
     }
 }
 
+struct ast* expr_13() {
+    struct ast* left = expr_12();
+    if(left == NULL) return NULL;
+
+    if(lex_peek() == TOK_TERNARYIF) {
+        lex_consume();
+        struct ast* a_if = expr_12();
+        if(a_if == NULL) error("Expected expression");
+        expect(TOK_COLON);
+        struct ast* a_else = expr_13();
+        if(a_else == NULL) error("Expected expression");
+
+        struct ast* res = ast_new();
+        res->type = AST_BINARY;
+        res->binary.op = OP_TERNARY_RES;
+        res->binary.left = a_if;
+        res->binary.right = a_else;
+
+        struct ast* new = ast_new();
+        new->type = AST_BINARY;
+        new->binary.op = OP_TERNARY;
+        new->binary.left = left;
+        new->binary.right = res;
+
+        left = new;
+    }
+    return left;
+}
+struct ast* expr_14() {
+    struct ast* left = expr_13();
+    if(left == NULL) return NULL;
+
+    switch(lex_peek()) {
+        case TOK_EQUALS: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+            struct ast* right = expr_14();
+            if(right == NULL) error("Expected expression");
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQPLUS: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_ADD;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQMINUS: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_SUB;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQMUL: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_MUL;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQDIV: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_DIV;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQMOD: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_MOD;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQLSHIFT: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_LSHIFT;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQRSHIFT: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_RSHIFT;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQAND: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_AND;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQXOR: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_XOR;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        case TOK_EQOR: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_ASSIGN;
+            new->binary.left = left;
+        
+            struct ast* val = expr_14();
+            if(val == NULL) error("Expected expression");
+            struct ast* right = ast_new();
+            right->type = AST_BINARY;
+            right->binary.op = OP_OR;
+            right->binary.left = left;
+            right->binary.right = val;
+
+            new->binary.right = right;
+            left = new;
+            break;
+        }
+        default: break;
+    }
+    return left;
+}
+
+struct ast* expr_15() {
+    struct ast* left = expr_14();
+    if(left == NULL) return NULL;
+
+    while(1) {
+        switch(lex_peek()) {
+            case TOK_COMMA: {
+                lex_consume();
+                struct ast* new = ast_new();
+                new->type = AST_BINARY;
+                new->binary.op = OP_COMMA;
+                new->binary.left = left;
+                struct ast* right = expr_11();
+                if(right == NULL) error("Expected expression");
+                new->binary.right = right;
+                left = new;
+                break;
+            }
+            default: return left;
+        }
+    }
+}
+
 struct ast* expr() {
-    return expr_12();
+    return expr_15();
 }

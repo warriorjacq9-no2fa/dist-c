@@ -81,19 +81,23 @@ while
     = "while", "(", expr, ")", { stmt }
 ;
 
-expr = expr_14
+expr = expr_15
+;
+
+expr_15
+    = expr_14, { ",", expr_14 }
 ;
 
 expr_14
-    = expr_13, { (
+    = expr_13, [ (
         "=" |
         "+=" | "-=" | "*=" | "/=" | "%=" |
         "<<=" | ">>=" | "&=" | "^=" | "|="
-    ), expr_13 }
+    ), expr_14 ]
 ;
 
 expr_13
-    = expr_12, { "?", expr_12, ":", expr_12 }
+    = expr_12, [ "?", expr_12, ":", expr_13 ]
 ;
 
 expr_12
