@@ -38,8 +38,7 @@ static const char* const op_strings[] = {
     "|",
     "&&",
     "||",
-    "?",
-    ":",
+    "?:",
     "=",
     ",",
     "while",
@@ -49,7 +48,6 @@ static const char* const op_strings[] = {
     "switch{}",
     "return",
     "if",
-    "if,else",
     "goto",
     "{}"
 };
@@ -73,6 +71,11 @@ void ast_free(struct ast* ast) {
         case AST_BINARY:
             ast_free(ast->binary.left);
             ast_free(ast->binary.right);
+            break;
+        case AST_TERNARY:
+            ast_free(ast->ternary.left);
+            ast_free(ast->ternary.center);
+            ast_free(ast->ternary.right);
             break;
         case AST_LIST:
             for(size_t i = 0; i < ast->list.sz; i++) {
@@ -98,9 +101,11 @@ void _ast_print(struct ast* ast, int indent) {
                 printf("(%s\n", op_strings[ast->binary.op]);
             else
                 printf("(\n");
+
             for(int i = 0; i < indent; i++) printf(" ");
             _ast_print(ast->unary.next, indent + 4);
             printf("\n");
+
             for(int i = 0; i < indent - 4; i++) printf(" ");
             printf(")");
             break;
@@ -109,12 +114,36 @@ void _ast_print(struct ast* ast, int indent) {
                 printf("(%s\n", op_strings[ast->binary.op]);
             else
                 printf("(\n");
+
             for(int i = 0; i < indent; i++) printf(" ");
             _ast_print(ast->binary.left, indent + 4);
             printf("\n");
+
             for(int i = 0; i < indent; i++) printf(" ");
             _ast_print(ast->binary.right,  indent + 4);
             printf("\n");
+
+            for(int i = 0; i < indent - 4; i++) printf(" ");
+            printf(")");
+            break;
+        case AST_TERNARY:
+            if(ast->ternary.op >= 0 && ast->ternary.op < _OP_ENDOFLIST)
+                printf("(%s\n", op_strings[ast->ternary.op]);
+            else
+                printf("(\n");
+
+            for(int i = 0; i < indent; i++) printf(" ");
+            _ast_print(ast->ternary.left, indent + 4);
+            printf("\n");
+
+            for(int i = 0; i < indent; i++) printf(" ");
+            _ast_print(ast->ternary.center, indent + 4);
+            printf("\n");
+
+            for(int i = 0; i < indent; i++) printf(" ");
+            _ast_print(ast->ternary.right,  indent + 4);
+            printf("\n");
+
             for(int i = 0; i < indent - 4; i++) printf(" ");
             printf(")");
             break;
@@ -123,11 +152,13 @@ void _ast_print(struct ast* ast, int indent) {
                 printf("(%s\n", op_strings[ast->list.op]);
             else
                 printf("(\n");
+
             for(size_t idx = 0; idx < ast->list.sz; idx++) {
                 for(int i = 0; i < indent; i++) printf(" ");
                 _ast_print(ast->list.list[idx], indent + 4);
                 printf("\n");
             }
+
             for(int i = 0; i < indent - 4; i++) printf(" ");
             printf(")");
             break;

@@ -570,17 +570,12 @@ struct ast* expr_13() {
         struct ast* a_else = expr_13();
         if(a_else == NULL) error("Expected expression");
 
-        struct ast* res = ast_new();
-        res->type = AST_BINARY;
-        res->binary.op = OP_TERNARY_RES;
-        res->binary.left = a_if;
-        res->binary.right = a_else;
-
         struct ast* new = ast_new();
-        new->type = AST_BINARY;
-        new->binary.op = OP_TERNARY;
-        new->binary.left = left;
-        new->binary.right = res;
+        new->type = AST_TERNARY;
+        new->ternary.op = OP_TERNARY;
+        new->ternary.left = left;
+        new->ternary.center = a_if;
+        new->ternary.right = a_else;
 
         left = new;
     }
@@ -926,21 +921,14 @@ struct ast* parse_if() {
         struct ast* body = stmt();
         struct ast* else_body = NULL;
 
-        if(accept(TOK_ELSE)) {
-            else_body = stmt();
-        }
-
-        struct ast* res = ast_new();
-        res->type = AST_BINARY;
-        res->binary.op = OP_IF_RES;
-        res->binary.left = body;
-        res->binary.right = else_body;
+        if(accept(TOK_ELSE)) else_body = stmt();
 
         struct ast* top = ast_new();
-        top->type = AST_BINARY;
-        top->binary.op = OP_IF;
-        top->binary.left = e;
-        top->binary.right = res;
+        top->type = AST_TERNARY;
+        top->ternary.op = OP_IF;
+        top->ternary.left = e;
+        top->ternary.center = body;
+        top->ternary.right = else_body;
 
         return top;
     }

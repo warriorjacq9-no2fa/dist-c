@@ -54,7 +54,6 @@ enum op {
     OP_BOOLOR,
 /* expr_13 */
     OP_TERNARY,
-    OP_TERNARY_RES,
 /* expr_14 */
     OP_ASSIGN,
 /* expr_15 */
@@ -72,7 +71,6 @@ enum op {
     OP_RETURN,
 /* parse_if */
     OP_IF,
-    OP_IF_RES,
 /* parse_goto */
     OP_GOTO,
 /* stmt */
@@ -87,6 +85,7 @@ struct ast {
         struct { char* value; } ident;
         struct { enum op op; struct ast* next; } unary;
         struct { enum op op; struct ast* left; struct ast* right; } binary;
+        struct { enum op op; struct ast* left; struct ast* center; struct ast* right; } ternary;
         struct { enum op op; struct ast** list; size_t sz; } list;
     };
     enum ast_type {
@@ -94,6 +93,7 @@ struct ast {
         AST_IDENT,
         AST_UNARY,
         AST_BINARY,
+        AST_TERNARY,
         AST_LIST
     } type;
 };
