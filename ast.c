@@ -48,6 +48,8 @@ static const char* const op_strings[] = {
     "switch",
     "switch{}",
     "return",
+    "if",
+    "if,else",
     "{}"
 };
 

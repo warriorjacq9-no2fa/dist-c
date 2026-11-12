@@ -55,7 +55,6 @@ goto = "goto", ident, ";"
 
 if
     = "if", "(", expr, ")", stmt,
-    { "else", "if", "(", expr, ")", stmt },
     [ "else", stmt ]
 ;
 

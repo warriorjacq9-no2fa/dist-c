@@ -916,12 +916,44 @@ struct ast* parse_return() {
     return NULL;
 }
 
+struct ast* parse_if() {
+    if(accept(TOK_IF)) {
+        expect(TOK_LPAREN);
+        struct ast* e = expr();
+        if(e == NULL) error("Expected expression");
+        expect(TOK_RPAREN);
+
+        struct ast* body = stmt();
+        struct ast* else_body = NULL;
+
+        if(accept(TOK_ELSE)) {
+            else_body = stmt();
+        }
+
+        struct ast* res = ast_new();
+        res->type = AST_BINARY;
+        res->binary.op = OP_IF_RES;
+        res->binary.left = body;
+        res->binary.right = else_body;
+
+        struct ast* top = ast_new();
+        top->type = AST_BINARY;
+        top->binary.op = OP_IF;
+        top->binary.left = e;
+        top->binary.right = res;
+
+        return top;
+    }
+    return NULL;
+}
+
 struct ast* stmt() {
     struct ast* a;
     if((a = expr())) {
         expect(TOK_SEMICOLON);
         return a;
     }
+    if((a = parse_if())) return a;
     if((a = parse_return())) return a;
     if((a = parse_switch())) return a;
     if((a = parse_while())) return a;

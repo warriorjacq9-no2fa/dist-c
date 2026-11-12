@@ -70,6 +70,9 @@ enum op {
     OP_SWITCH_BODY,
 /* parse_return */
     OP_RETURN,
+/* parse_if */
+    OP_IF,
+    OP_IF_RES,
 /* stmt */
     OP_STMT_BODY,
 
