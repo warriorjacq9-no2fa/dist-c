@@ -73,6 +73,13 @@ enum op {
     OP_IF,
 /* parse_goto */
     OP_GOTO,
+/* parse_for */
+    OP_FOR,
+    OP_FOR_CLAUSE,
+/* do_while */
+    OP_DO_WHILE,
+/* parse_break */
+    OP_BREAK,
 /* stmt */
     OP_STMT_BODY,
 

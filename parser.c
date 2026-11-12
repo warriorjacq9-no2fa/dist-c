@@ -948,12 +948,77 @@ struct ast* parse_goto() {
     return NULL;
 }
 
+struct ast* parse_for() {
+    if(accept(TOK_FOR)) {
+        expect(TOK_LPAREN);
+        struct ast* a1 = expr(); // TODO: var_decl
+        expect(TOK_SEMICOLON);
+        struct ast* a2 = expr();
+        expect(TOK_SEMICOLON);
+        struct ast* a3 = expr();
+        expect(TOK_RPAREN);
+        struct ast* s = stmt();
+
+        struct ast* clause = ast_new();
+        clause->type = AST_TERNARY;
+        clause->ternary.op = OP_FOR_CLAUSE;
+        clause->ternary.left = a1;
+        clause->ternary.center = a2;
+        clause->ternary.right = a3;
+
+        struct ast* top = ast_new();
+        top->type = AST_BINARY;
+        top->binary.op = OP_FOR;
+        top->binary.left = clause;
+        top->binary.right = s;
+
+        return top;
+    }
+    return NULL;
+}
+
+struct ast* do_while() {
+    if(accept(TOK_DO)) {
+        struct ast* s = stmt();
+        expect(TOK_WHILE);
+        expect(TOK_LPAREN);
+        struct ast* e = expr();
+        if(e == NULL) error("Expected expression");
+        expect(TOK_RPAREN);
+        expect(TOK_SEMICOLON);
+
+        struct ast* new = ast_new();
+        new->type = AST_BINARY;
+        new->binary.op = OP_DO_WHILE;
+        new->binary.left = s;
+        new->binary.right = e;
+
+        return new;
+    }
+    return NULL;
+}
+
+struct ast* parse_break() {
+    if(accept(TOK_BREAK)) {
+        expect(TOK_SEMICOLON);
+        struct ast* new = ast_new();
+        new->type = AST_UNARY;
+        new->unary.op = OP_BREAK;
+        return new;
+    }
+    return NULL;
+}
+
 struct ast* stmt() {
     struct ast* a;
     if((a = expr())) {
         expect(TOK_SEMICOLON);
         return a;
     }
+    if((a = parse_break())) return a;
+    if((a = do_while())) return a;
+    if((a = parse_for())) return a;
+    if((a = parse_goto())) return a;
     if((a = parse_if())) return a;
     if((a = parse_return())) return a;
     if((a = parse_switch())) return a;

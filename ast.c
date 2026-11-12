@@ -49,6 +49,10 @@ static const char* const op_strings[] = {
     "return",
     "if",
     "goto",
+    "for",
+    "for()",
+    "do while",
+    "break",
     "{}"
 };
 
