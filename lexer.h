@@ -87,8 +87,8 @@ void lex_init(char* data);
 [[noreturn]] void error(const char* msg);
 enum token lex_consume();
 enum token lex_peek();
-void lex_back();
-void lex_back_n(size_t n);
+size_t lex_get_pos();
+void lex_set_pos(size_t p);
 
 int lex_get_number();
 char* lex_get_ident();

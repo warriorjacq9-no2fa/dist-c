@@ -65,8 +65,9 @@ struct ast* type() {
 }
 
 struct ast* expr_0() {
-    if(lex_peek() == TOK_IDENT) return ident();
-    if(lex_peek() == TOK_NUMBER) return number();
+    struct ast* ast;
+    if((ast = ident())) return ast;
+    if((ast = number())) return ast;
     if(accept(TOK_LPAREN)) {
         struct ast* ast = expr();
         expect(TOK_RPAREN);
@@ -955,11 +956,12 @@ struct ast* parse_goto() {
 }
 
 struct ast* var_decl() {
+    size_t pos = lex_get_pos();
     struct ast* t = type();
     if(t == NULL) return NULL;
     struct ast* id = ident();
     if(id == NULL) {
-        lex_back();
+        lex_set_pos(pos);
         ast_free(t);
         return NULL;
     }
@@ -977,7 +979,7 @@ struct ast* var_decl() {
     proto->type = AST_BINARY;
     proto->binary.op = OP_VAR_PROTO;
     proto->binary.left = t;
-    proto->binary.left = id;
+    proto->binary.right = id;
 
     if(arr || val) {
         struct ast* body = ast_new();
@@ -1179,7 +1181,7 @@ struct ast* decl() {
         proto->type = AST_BINARY;
         proto->binary.op = OP_VAR_PROTO;
         proto->binary.left = t;
-        proto->binary.left = id;
+        proto->binary.right = id;
 
         if(arr || val) {
             struct ast* body = ast_new();
