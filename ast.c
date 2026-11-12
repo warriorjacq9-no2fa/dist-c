@@ -50,6 +50,7 @@ static const char* const op_strings[] = {
     "return",
     "if",
     "if,else",
+    "goto",
     "{}"
 };
 

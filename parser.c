@@ -947,6 +947,19 @@ struct ast* parse_if() {
     return NULL;
 }
 
+struct ast* parse_goto() {
+    if(accept(TOK_GOTO)) {
+        struct ast* i = ident();
+        expect(TOK_SEMICOLON);
+        struct ast* new = ast_new();
+        new->type = AST_UNARY;
+        new->unary.op = OP_GOTO;
+        new->unary.next = i;
+        return new;
+    }
+    return NULL;
+}
+
 struct ast* stmt() {
     struct ast* a;
     if((a = expr())) {
