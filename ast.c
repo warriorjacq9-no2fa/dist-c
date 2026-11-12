@@ -53,7 +53,16 @@ static const char* const op_strings[] = {
     "for()",
     "do while",
     "break",
-    "{}"
+    "{}",
+    "arg",
+    "arg[]",
+    "func proto",
+    "func{}",
+    "func",
+    "var proto",
+    "var{}",
+    "var",
+    "program"
 };
 
 struct ast* ast_new() {

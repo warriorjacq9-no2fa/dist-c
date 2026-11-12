@@ -27,27 +27,33 @@ bool expect(enum token t) {
 }
 
 struct ast* number() {
-    expect(TOK_NUMBER);
-    struct ast* ast = ast_new();
-    ast->type = AST_NUMBER;
-    ast->number.value = lex_get_number();
-    return ast;
+    if(accept(TOK_NUMBER)) {
+        struct ast* ast = ast_new();
+        ast->type = AST_NUMBER;
+        ast->number.value = lex_get_number();
+        return ast;
+    }
+    return NULL;
 }
 
 struct ast* ident() {
-    expect(TOK_IDENT);
-    struct ast* ast = ast_new();
-    ast->type = AST_IDENT;
-    ast->ident.value = lex_get_ident();
-    return ast;
+    if(accept(TOK_IDENT)) {
+        struct ast* ast = ast_new();
+        ast->type = AST_IDENT;
+        ast->ident.value = lex_get_ident();
+        return ast;
+    }
+    return NULL;
 }
 
 struct ast* type() {
+    struct ast* id = ident();
+    if(id == NULL) return NULL;
     struct ast* ast = ast_new();
     ast->type = AST_BINARY;
     ast->binary.op = OP_TYPE;
 
-    ast->binary.left = ident();
+    ast->binary.left = id;
 
     int i = 0;
     while(accept(TOK_STAR)) i++;
@@ -948,10 +954,53 @@ struct ast* parse_goto() {
     return NULL;
 }
 
+struct ast* var_decl() {
+    struct ast* t = type();
+    if(t == NULL) return NULL;
+    struct ast* id = ident();
+    if(id == NULL) {
+        lex_back();
+        ast_free(t);
+        return NULL;
+    }
+    struct ast* arr = NULL;
+    struct ast* val = NULL;
+    if(accept(TOK_LBRACKET)) {
+        arr = expr();
+        expect(TOK_RBRACKET);
+    }
+    if(accept(TOK_EQUALS)) {
+        val = expr();
+    }
+
+    struct ast* proto = ast_new();
+    proto->type = AST_BINARY;
+    proto->binary.op = OP_VAR_PROTO;
+    proto->binary.left = t;
+    proto->binary.left = id;
+
+    if(arr || val) {
+        struct ast* body = ast_new();
+        body->type = AST_BINARY;
+        body->binary.op = OP_VAR_BODY;
+        body->binary.left = arr;
+        body->binary.right = val;
+        
+        struct ast* new = ast_new();
+        new->type = AST_BINARY;
+        new->binary.op = OP_VAR;
+        new->binary.left = proto;
+        new->binary.right = body;
+        return new;
+    }
+    return proto;
+}
+
 struct ast* parse_for() {
     if(accept(TOK_FOR)) {
         expect(TOK_LPAREN);
-        struct ast* a1 = expr(); // TODO: var_decl
+        struct ast* a1 = var_decl();
+        if(a1 == NULL) a1 = expr();
         expect(TOK_SEMICOLON);
         struct ast* a2 = expr();
         expect(TOK_SEMICOLON);
@@ -1011,6 +1060,10 @@ struct ast* parse_break() {
 
 struct ast* stmt() {
     struct ast* a;
+    if((a = var_decl())) {
+        expect(TOK_SEMICOLON);
+        return a;
+    }
     if((a = expr())) {
         expect(TOK_SEMICOLON);
         return a;
@@ -1039,6 +1092,124 @@ struct ast* stmt() {
     return NULL;
 }
 
+struct ast* arg() {
+    struct ast* t = type();
+    if(t == NULL) return NULL;
+    struct ast* id = ident();
+    if(id == NULL) error("Expected identifier");
+    
+    struct ast* new = ast_new();
+    new->type = AST_BINARY;
+    new->binary.op = OP_ARG;
+    new->binary.left = t;
+    new->binary.right = id;
+
+    return new;
+}
+
+struct ast* arg_list() {
+    struct ast* list = ast_new();
+    list->type = AST_LIST;
+    list->list.op = OP_ARG_LIST;
+    struct ast* stmts[1024];
+    size_t sz = 0;
+    while(1) {
+        stmts[sz] = arg();
+        if(stmts[sz] == NULL) break;
+        sz++;
+        if(!accept(TOK_COMMA)) break;
+    }
+    list->list.list = malloc(sz * sizeof(struct ast*));
+    memcpy(list->list.list, stmts, sz * sizeof(struct ast*));
+    list->list.sz = sz;
+    return list;
+}
+
+struct ast* tmp();
+
+struct ast* decl() {
+    struct ast* t = type();
+    if(t == NULL) return NULL;
+    struct ast* id = ident();
+    if(id == NULL) error("Expected identifier");
+    if(accept(TOK_LPAREN)) { // function
+        struct ast* args = arg_list();
+        expect(TOK_RPAREN);
+        struct ast* new = ast_new();
+        new->type = AST_TERNARY;
+        new->ternary.op = OP_FUNC_PROTO;
+        new->ternary.left = t;
+        new->ternary.center = id;
+        new->ternary.right = args;
+
+        if(accept(TOK_LBRACE)) {
+            struct ast* top = ast_new();
+            top->type = AST_BINARY;
+            top->binary.op = OP_FUNC;
+            top->binary.left = new;
+
+            struct ast* body = ast_new();
+            body->type = AST_LIST;
+            body->list.op = OP_FUNC_BODY;
+            struct ast* stmts[1024];
+            size_t sz = 0;
+            while((stmts[sz] = stmt())) sz++;
+            body->list.list = malloc(sz * sizeof(struct ast*));
+            memcpy(body->list.list, stmts, sz * sizeof(struct ast*));
+            body->list.sz = sz;
+            expect(TOK_RBRACE);
+            top->binary.right = body;
+            return top;
+        }
+        expect(TOK_SEMICOLON);
+
+        return new;
+    } else { // not a function
+        struct ast* arr = NULL;
+        struct ast* val = NULL;
+        if(accept(TOK_LBRACKET)) {
+            arr = expr();
+            expect(TOK_RBRACKET);
+        }
+        if(accept(TOK_EQUALS)) {
+            val = expr();
+        }
+
+        struct ast* proto = ast_new();
+        proto->type = AST_BINARY;
+        proto->binary.op = OP_VAR_PROTO;
+        proto->binary.left = t;
+        proto->binary.left = id;
+
+        if(arr || val) {
+            struct ast* body = ast_new();
+            body->type = AST_BINARY;
+            body->binary.op = OP_VAR_BODY;
+            body->binary.left = arr;
+            body->binary.right = val;
+            
+            struct ast* new = ast_new();
+            new->type = AST_BINARY;
+            new->binary.op = OP_VAR;
+            new->binary.left = proto;
+            new->binary.right = body;
+            return new;
+        }
+        return proto;
+    }
+    return NULL;
+}
+
 struct ast* program() {
-    return stmt();
+    struct ast* body = ast_new();
+    body->type = AST_LIST;
+    body->list.op = OP_PROGRAM;
+    struct ast* decls[1024];
+    size_t sz = 0;
+    while((decls[sz] = decl())) sz++;
+    body->list.list = malloc(sz * sizeof(struct ast*));
+    memcpy(body->list.list, decls, sz * sizeof(struct ast*));
+    body->list.sz = sz;
+
+    return body;
 }

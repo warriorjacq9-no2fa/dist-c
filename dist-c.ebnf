@@ -16,14 +16,15 @@ func_proto = type, ident, "(", [ arg_list ], ")"
 arg_list = arg, { ",", arg }
 ;
 
-arg = type, ident, [ "=", number ]
+arg = type, ident
 ;
 
 func_decl = func_proto, "{", { stmt }, "}"
 ;
 
 stmt
-    = expr, ";"
+    = var_decl, ";"
+    | expr, ";"
     | break
     | do_while
     | for

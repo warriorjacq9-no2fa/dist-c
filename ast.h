@@ -82,6 +82,19 @@ enum op {
     OP_BREAK,
 /* stmt */
     OP_STMT_BODY,
+/* arg */
+    OP_ARG,
+/* arg_list */
+    OP_ARG_LIST,
+/* decl */
+    OP_FUNC_PROTO,
+    OP_FUNC_BODY,
+    OP_FUNC,
+    OP_VAR_PROTO,
+    OP_VAR_BODY,
+    OP_VAR,
+/* program */
+    OP_PROGRAM,
 
     _OP_ENDOFLIST
 };
