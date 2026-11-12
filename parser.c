@@ -812,7 +812,7 @@ struct ast* expr_15() {
                 new->type = AST_BINARY;
                 new->binary.op = OP_COMMA;
                 new->binary.left = left;
-                struct ast* right = expr_11();
+                struct ast* right = expr_14();
                 if(right == NULL) error("Expected expression");
                 new->binary.right = right;
                 left = new;
@@ -914,6 +914,7 @@ struct ast* parse_return() {
         new->unary.op = OP_RETURN;
         new->unary.next = expr();
         expect(TOK_SEMICOLON);
+        return new;
     }
     return NULL;
 }
