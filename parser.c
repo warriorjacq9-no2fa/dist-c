@@ -1,4 +1,3 @@
-// TODO: use stmt-native braces instead
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -826,19 +825,6 @@ struct ast* expr() {
     return expr_15();
 }
 
-struct ast* stmt_body(enum op op) {
-    struct ast* body = ast_new();
-    body->type = AST_LIST;
-    body->list.op = op;
-    struct ast* stmts[1024];
-    size_t sz = 0;
-    while((stmts[sz++] = stmt()));
-    body->list.list = malloc(sz * sizeof(struct ast*));
-    memcpy(body->list.list, stmts, sz * sizeof(struct ast*));
-    body->list.sz = sz;
-    return body;
-}
-
 struct ast* parse_while() {
     if(accept(TOK_WHILE)) {
         expect(TOK_LPAREN);
@@ -848,7 +834,7 @@ struct ast* parse_while() {
         top->type = AST_BINARY;
         top->binary.op = OP_WHILE;
         top->binary.left = cond;
-        top->binary.right = stmt_body(OP_WHILE_BODY);
+        top->binary.right = stmt();
         return top;
     }
     return NULL;
@@ -857,7 +843,10 @@ struct ast* parse_while() {
 struct ast* parse_default() {
     if(accept(TOK_DEFAULT)) {
         expect(TOK_COLON);
-        return stmt_body(OP_DEFAULT_BODY);
+        struct ast* new = ast_new();
+        new->type = AST_UNARY;
+        new->unary.op = OP_DEFAULT;
+        return new;
     }
     return NULL;
 }
@@ -866,12 +855,12 @@ struct ast* parse_case() {
     if(accept(TOK_CASE)) {
         struct ast* e = expr();
         if(e == NULL) error("Expected expression");
+        expect(TOK_COLON);
 
         struct ast* new = ast_new();
-        new->type = AST_BINARY;
-        new->binary.op = OP_CASE;
-        new->binary.left = e;
-        new->binary.right = stmt_body(OP_CASE_BODY);
+        new->type = AST_UNARY;
+        new->unary.op = OP_CASE;
+        new->unary.next = e;
 
         return new;
     }
@@ -894,7 +883,9 @@ struct ast* parse_switch() {
         while(1) {
             labels[sz] = parse_case();
             if(labels[sz] == NULL) labels[sz] = parse_default();
-            if(labels[sz++] == NULL) break;
+            if(labels[sz] == NULL) labels[sz] = stmt();
+            if(labels[sz] == NULL) break;
+            else sz++;
         }
 
         expect(TOK_RBRACE);
@@ -908,6 +899,8 @@ struct ast* parse_switch() {
         top->binary.op = OP_SWITCH;
         top->binary.left = e;
         top->binary.right = body;
+
+        return top;
     }
     return NULL;
 }
@@ -933,9 +926,17 @@ struct ast* stmt() {
     if((a = parse_switch())) return a;
     if((a = parse_while())) return a;
     if(accept(TOK_LBRACE)) {
-        a = stmt_body(OP_STMT_BODY);
+        struct ast* body = ast_new();
+        body->type = AST_LIST;
+        body->list.op = OP_STMT_BODY;
+        struct ast* stmts[1024];
+        size_t sz = 0;
+        while((stmts[sz] = stmt())) sz++;
+        body->list.list = malloc(sz * sizeof(struct ast*));
+        memcpy(body->list.list, stmts, sz * sizeof(struct ast*));
+        body->list.sz = sz;
         expect(TOK_RBRACE);
-        return a;
+        return body;
     }
     return NULL;
 }
