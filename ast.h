@@ -59,6 +59,21 @@ enum op {
     OP_ASSIGN,
 /* expr_15 */
     OP_COMMA,
+/* parse_while */
+    OP_WHILE,
+    OP_WHILE_BODY,
+/* parse_default */
+    OP_DEFAULT_BODY,
+/* parse_case */
+    OP_CASE,
+    OP_CASE_BODY,
+/* parse_switch */
+    OP_SWITCH,
+    OP_SWITCH_BODY,
+/* parse_return */
+    OP_RETURN,
+/* stmt */
+    OP_STMT_BODY,
 
     _OP_ENDOFLIST
 };

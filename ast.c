@@ -41,7 +41,16 @@ static const char* const op_strings[] = {
     "?",
     ":",
     "=",
-    ","
+    ",",
+    "while",
+    "while{}",
+    "default{}",
+    "case",
+    "case{}",
+    "switch",
+    "switch{}",
+    "return",
+    "{}"
 };
 
 struct ast* ast_new() {
