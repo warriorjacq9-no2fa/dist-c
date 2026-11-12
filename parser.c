@@ -149,106 +149,86 @@ struct ast* expr_1() {
     }
 }
 
-void left_expand(struct ast** left, struct ast** bottom, struct ast* new) {
-    if(*left) {
-        switch((*bottom)->type) {
-            case AST_UNARY:
-                (*bottom)->unary.next = new;
-                break;
-            case AST_BINARY:
-                (*bottom)->binary.right = new;
-                break;
-            default: break;
-        }
-    } else {
-        *left = new;
-    }
-    *bottom = new;
-}
-
 struct ast* expr_2() {
     struct ast* left = NULL;
-    struct ast* bottom = NULL;
 
-    while(1) {
-        switch(lex_peek()) {
-            case TOK_INC: {
-                lex_consume();
-                struct ast* new = ast_new();
-                new->type = AST_UNARY;
-                new->unary.op = OP_PRE_INC;
-                left_expand(&left, &bottom, new);
-                break;
-            }
-            case TOK_DEC: {
-                lex_consume();
-                struct ast* new = ast_new();
-                new->type = AST_UNARY;
-                new->unary.op = OP_PRE_DEC;
-                left_expand(&left, &bottom, new);
-                break;
-            }
-            case TOK_PLUS: {
-                lex_consume();
-                struct ast* new = ast_new();
-                new->type = AST_UNARY;
-                new->unary.op = OP_UNARY_PLUS;
-                left_expand(&left, &bottom, new);
-                break;
-            }
-            case TOK_MINUS: {
-                lex_consume();
-                struct ast* new = ast_new();
-                new->type = AST_UNARY;
-                new->unary.op = OP_UNARY_MINUS;
-                left_expand(&left, &bottom, new);
-                break;
-            }
-            case TOK_BOOLINV: {
-                lex_consume();
-                struct ast* new = ast_new();
-                new->type = AST_UNARY;
-                new->unary.op = OP_BOOLINV;
-                left_expand(&left, &bottom, new);
-                break;
-            }
-            case TOK_LOGINV: {
-                lex_consume();
-                struct ast* new = ast_new();
-                new->type = AST_UNARY;
-                new->unary.op = OP_LOGINV;
-                left_expand(&left, &bottom, new);
-                break;
-            }
-            case TOK_STAR: {
-                lex_consume();
-                struct ast* new = ast_new();
-                new->type = AST_UNARY;
-                new->unary.op = OP_DEREF;
-                left_expand(&left, &bottom, new);
-                break;
-            }
-            case TOK_AMPERSAND: {
-                lex_consume();
-                struct ast* new = ast_new();
-                new->type = AST_UNARY;
-                new->unary.op = OP_REF;
-                left_expand(&left, &bottom, new);
-                break;
-            }
-            default: goto _next;
+    switch(lex_peek()) {
+        case TOK_INC: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_UNARY;
+            new->unary.op = OP_PRE_INC;
+            new->unary.next = expr_2();
+            left = new;
+            break;
         }
-    }
-_next: {
-        struct ast* right = expr_1();
-        if(right == NULL) {
-            ast_free(left);
-            return NULL;
+        case TOK_DEC: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_UNARY;
+            new->unary.op = OP_PRE_DEC;
+            new->unary.next = expr_2();
+            left = new;
+            break;
         }
-
-        left_expand(&left, &bottom, right);
-        return left;
+        case TOK_PLUS: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_UNARY;
+            new->unary.op = OP_UNARY_PLUS;
+            new->unary.next = expr_2();
+            left = new;
+            break;
+        }
+        case TOK_MINUS: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_UNARY;
+            new->unary.op = OP_UNARY_MINUS;
+            new->unary.next = expr_2();
+            left = new;
+            break;
+        }
+        case TOK_BOOLINV: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_UNARY;
+            new->unary.op = OP_BOOLINV;
+            new->unary.next = expr_2();
+            left = new;
+            break;
+        }
+        case TOK_LOGINV: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_UNARY;
+            new->unary.op = OP_LOGINV;
+            new->unary.next = expr_2();
+            left = new;
+            break;
+        }
+        case TOK_STAR: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_UNARY;
+            new->unary.op = OP_DEREF;
+            new->unary.next = expr_2();
+            left = new;
+            break;
+        }
+        case TOK_AMPERSAND: {
+            lex_consume();
+            struct ast* new = ast_new();
+            new->type = AST_UNARY;
+            new->unary.op = OP_REF;
+            new->unary.next = expr_2();
+            left = new;
+            break;
+        }
+        default: return expr_1();
     }
+    
+    return left;
 }
 
 struct ast* expr_3() {
