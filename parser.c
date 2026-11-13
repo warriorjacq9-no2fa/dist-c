@@ -50,16 +50,21 @@ struct ast* type() {
     struct ast* id = ident();
     if(id == NULL) return NULL;
     struct ast* ast = ast_new();
-    ast->type = AST_BINARY;
-    ast->binary.op = OP_TYPE;
+    ast->type = AST_UNARY;
+    ast->unary.op = OP_TYPE;
 
-    ast->binary.left = id;
+    char data[256];
+    strcpy(data, id->ident.value);
+    ast_free(id);
 
-    int i = 0;
-    while(accept(TOK_STAR)) i++;
-    ast->binary.right = ast_new();
-    ast->binary.right->type = AST_NUMBER;
-    ast->binary.right->number.value = i;
+    int i = strlen(data);
+    while(accept(TOK_STAR)) {
+        data[i] = '*';
+        i++;
+    }
+    ast->unary.next = ast_new();
+    ast->unary.next->type = AST_IDENT;
+    ast->unary.next->ident.value = strdup(data);
 
     return ast;
 }
