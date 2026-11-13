@@ -40,6 +40,14 @@ void dict_append(struct dict* dest, struct dict* src) {
     free(src);
 }
 
+void* dict_get(struct dict* dict, char* key) {
+    for(size_t i = 0; i < dict->k->sz; i++) {
+        if(strcmp((char*)dict->k->data[i], key) == 0)
+            return dict->v->data[i];
+    }
+    return NULL;
+}
+
 void dict_print(struct dict* dict) {
     size_t k_sz = dict->k->sz;
     size_t v_sz = dict->v->sz;
