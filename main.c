@@ -3,6 +3,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "ast.h"
+#include "compiler.h"
 
 int main(int argc, char* argv[]) {
     if(argc != 2) {
@@ -40,5 +41,6 @@ int main(int argc, char* argv[]) {
     lex_init(data);
     struct ast* ast = program();
     ast_print(ast);
+    compile(ast);
     return 0;
 }

@@ -9,6 +9,7 @@ OBJS = \
 parser.o \
 lexer.o \
 ast.o \
+compiler.o \
 main.o
 
 .PHONY: all clean

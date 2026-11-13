@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 struct array {
     size_t sz;
@@ -24,44 +25,108 @@ struct dict* dict_new(size_t sz) {
 
 /* Append src onto dict and destroy src */
 void dict_append(struct dict* dest, struct dict* src) {
-    dest->k = realloc(dest->k, dest->k->sz + src->k->sz);
-    memcpy(&dest->k[dest->k->sz], src->k, src->k->sz);
-    dest->k->sz += src->k->sz;
-    for(size_t i = 0; i < src->k->sz; i++) free(src->k->data[i]);
-    free(src->k);
+    size_t k_sz = sizeof(struct array) + (dest->k->sz + src->k->sz) * sizeof(void*);
+    size_t v_sz = sizeof(struct array) + (dest->v->sz + src->v->sz) * sizeof(void*);
 
-    dest->v = realloc(dest->v, dest->v->sz + src->v->sz);
-    memcpy(&dest->v[dest->v->sz], src->v, src->v->sz);
+    dest->k = realloc(dest->k, k_sz);
+    dest->v = realloc(dest->v, v_sz);
+
+    memcpy(&dest->k->data[dest->k->sz], src->k->data, src->k->sz * sizeof(void*));
+    dest->k->sz += src->k->sz;
+
+    memcpy(&dest->v->data[dest->v->sz], src->v->data, src->v->sz * sizeof(void*));
     dest->v->sz += src->v->sz;
-    for(size_t i = 0; i < src->v->sz; i++) free(src->v->data[i]);
+
+    free(src->k);
     free(src->v);
+    free(src);
 }
 
+void dict_print(struct dict* dict) {
+    size_t k_sz = dict->k->sz;
+    size_t v_sz = dict->v->sz;
+    size_t sz = (k_sz < v_sz) ? k_sz : v_sz;
+
+    for(size_t i = 0; i < sz; i++) {
+        printf("%s: %s\n", (char*)dict->k->data[i], (char*)dict->v->data[i]);
+    }
+}
+
+// TODO: fix mem leak when dict size is 0
 /* Returns dict with keys as identifiers and values as (stringified) types */
 struct dict* get_idents(struct ast* ast) {
-    struct dict* dict = dict_new(1);
+    struct dict* dict = dict_new(0);
+    if(ast == NULL) return dict;
     switch(ast->type) {
+        case AST_UNARY: {
+            struct dict* a = get_idents(ast->unary.next);
+            dict_append(dict, a);
+            break;
+        }
         case AST_BINARY: {
             switch(ast->binary.op) {
                 case OP_VAR_PROTO:
-                    dict->k->data[0] = ast->binary.right->ident.value;
-                    dict->v->data[0] = ast->binary.left->unary.next->ident.value;
+                    dict->k = realloc(dict->k, sizeof(struct array) + sizeof(void*));
+                    dict->k->sz = 1;
+                    dict->k->data[0] = strdup(ast->binary.right->ident.value);
+                    dict->v = realloc(dict->v, sizeof(struct array) + sizeof(void*));
+                    dict->v->sz = 1;
+                    dict->v->data[0] = strdup(ast->binary.left->unary.next->ident.value);
+                    break;
+                case OP_FUNC_PROTO:
+                    dict->k = realloc(dict->k, sizeof(struct array) + sizeof(void*));
+                    dict->k->sz = 1;
+                    dict->k->data[0] = strdup(ast->binary.right->ident.value);
+
+                    char* type = strdup(ast->binary.left->unary.next->ident.value);
+                    size_t sz = strlen(type) + 5;
+                    type = realloc(type, sz);
+                    memmove(&type[5], type, sz - 5);
+                    type[0] = 'f',
+                    type[1] = 'u',
+                    type[2] = 'n',
+                    type[3] = 'c';
+                    type[4] = ':';
+                    dict->v = realloc(dict->v, sizeof(struct array) + sizeof(void*));
+                    dict->v->sz = 1;
+                    dict->v->data[0] = type;
                     break;
                 default: {
                     struct dict* a = get_idents(ast->binary.left);
-                    dict_append(dict, a);
+                    if(a->k->sz > 0) dict_append(dict, a);
 
                     struct dict* b = get_idents(ast->binary.right);
-                    dict_append(dict, a);
+                    if(b->k->sz > 0) dict_append(dict, b);
                     break;
                 }
             }
             break;
         }
+        case AST_TERNARY: {
+            struct dict* a = get_idents(ast->ternary.left);
+            if(a->k->sz > 0) dict_append(dict, a);
+
+            struct dict* b = get_idents(ast->ternary.center);
+            if(b->k->sz > 0) dict_append(dict, b);
+
+            struct dict* c = get_idents(ast->ternary.right);
+            if(c->k->sz > 0) dict_append(dict, c);
+            break;
+        }
+        case AST_LIST: {
+            for(size_t i = 0; i < ast->list.sz; i++) {
+                struct dict* a = get_idents(ast->list.list[i]);
+                if(a->k->sz > 0) dict_append(dict, a);
+            }
+            break;
+        }
+        default: break;
     }
+    return dict;
 }
 
 char* compile(struct ast* ast) {
+    dict_print(get_idents(ast));
     switch(ast->unary.op) {
         case OP_TYPE:
         case OP_POST:
@@ -124,4 +189,5 @@ char* compile(struct ast* ast) {
         case OP_PROGRAM:
         default: break;
     }
+    return NULL;
 }

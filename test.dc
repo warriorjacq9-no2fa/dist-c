@@ -1,0 +1,8 @@
+int fib(int i) {
+  int n = 0;
+  for(int j = 0; j < i; j++) {
+    n += j;
+    puts(itoa(n));
+  }
+  return 0;
+}
