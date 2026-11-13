@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include "lexer.h"
 
+extern const char* const op_strings[];
+
 enum op {
 /* type */
     OP_TYPE,

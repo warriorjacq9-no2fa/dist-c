@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "ast.h"
 
-static const char* const op_strings[] = {
+const char* const op_strings[] = {
     "type",
     "post",
     "x++",

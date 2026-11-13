@@ -47,15 +47,3 @@ void* dict_get(struct dict* dict, char* key) {
     }
     return NULL;
 }
-
-void dict_print(struct dict* dict) {
-    size_t k_sz = dict->k->sz;
-    size_t v_sz = dict->v->sz;
-    size_t sz = (k_sz < v_sz) ? k_sz : v_sz;
-
-    printf("{\n");
-    for(size_t i = 0; i < sz; i++) {
-        printf("    %s: %s\n", (char*)dict->k->data[i], (char*)dict->v->data[i]);
-    }
-    printf("}\n");
-}
