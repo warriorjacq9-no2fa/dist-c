@@ -3,56 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "dict.h"
 
-struct array {
-    size_t sz;
-    void* data[];
-};
-
-struct dict {
-    struct array* k;
-    struct array* v;
-};
-
-struct dict* dict_new(size_t sz) {
-    struct dict* dict = malloc(sizeof(struct dict));
-    dict->k = malloc(sizeof(struct array) + sz * sizeof(void*));
-    dict->k->sz = sz;
-    dict->v = malloc(sizeof(struct array) + sz * sizeof(void*));
-    dict->v->sz = sz;
-    return dict;
-}
-
-/* Append src onto dict and destroy src */
-void dict_append(struct dict* dest, struct dict* src) {
-    size_t k_sz = sizeof(struct array) + (dest->k->sz + src->k->sz) * sizeof(void*);
-    size_t v_sz = sizeof(struct array) + (dest->v->sz + src->v->sz) * sizeof(void*);
-
-    dest->k = realloc(dest->k, k_sz);
-    dest->v = realloc(dest->v, v_sz);
-
-    memcpy(&dest->k->data[dest->k->sz], src->k->data, src->k->sz * sizeof(void*));
-    dest->k->sz += src->k->sz;
-
-    memcpy(&dest->v->data[dest->v->sz], src->v->data, src->v->sz * sizeof(void*));
-    dest->v->sz += src->v->sz;
-
-    free(src->k);
-    free(src->v);
-    free(src);
-}
-
-void dict_print(struct dict* dict) {
-    size_t k_sz = dict->k->sz;
-    size_t v_sz = dict->v->sz;
-    size_t sz = (k_sz < v_sz) ? k_sz : v_sz;
-
-    for(size_t i = 0; i < sz; i++) {
-        printf("%s: %s\n", (char*)dict->k->data[i], (char*)dict->v->data[i]);
-    }
-}
-
-// TODO: fix mem leak when dict size is 0
 /* Returns dict with keys as identifiers and values as (stringified) types */
 struct dict* get_idents(struct ast* ast) {
     struct dict* dict = dict_new(0);
@@ -94,9 +46,11 @@ struct dict* get_idents(struct ast* ast) {
                 default: {
                     struct dict* a = get_idents(ast->binary.left);
                     if(a->k->sz > 0) dict_append(dict, a);
+                    else dict_free(a);
 
                     struct dict* b = get_idents(ast->binary.right);
                     if(b->k->sz > 0) dict_append(dict, b);
+                    else dict_free(b);
                     break;
                 }
             }
@@ -105,18 +59,22 @@ struct dict* get_idents(struct ast* ast) {
         case AST_TERNARY: {
             struct dict* a = get_idents(ast->ternary.left);
             if(a->k->sz > 0) dict_append(dict, a);
+            else dict_free(a);
 
             struct dict* b = get_idents(ast->ternary.center);
             if(b->k->sz > 0) dict_append(dict, b);
+            else dict_free(b);
 
             struct dict* c = get_idents(ast->ternary.right);
             if(c->k->sz > 0) dict_append(dict, c);
+            else dict_free(c);
             break;
         }
         case AST_LIST: {
             for(size_t i = 0; i < ast->list.sz; i++) {
                 struct dict* a = get_idents(ast->list.list[i]);
                 if(a->k->sz > 0) dict_append(dict, a);
+                else dict_free(a);
             }
             break;
         }
