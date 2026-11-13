@@ -25,6 +25,21 @@ struct dict* get_idents(struct ast* ast) {
                     dict->v->sz = 1;
                     dict->v->data[0] = strdup(ast->binary.left->unary.next->ident.value);
                     break;
+                default: {
+                    struct dict* a = get_idents(ast->binary.left);
+                    if(a->k->sz > 0) dict_append(dict, a);
+                    else dict_free(a);
+
+                    struct dict* b = get_idents(ast->binary.right);
+                    if(b->k->sz > 0) dict_append(dict, b);
+                    else dict_free(b);
+                    break;
+                }
+            }
+            break;
+        }
+        case AST_TERNARY: {
+            switch(ast->ternary.op)  {
                 case OP_FUNC_PROTO:
                     dict->k = realloc(dict->k, sizeof(struct array) + sizeof(void*));
                     dict->k->sz = 1;
@@ -44,30 +59,19 @@ struct dict* get_idents(struct ast* ast) {
                     dict->v->data[0] = type;
                     break;
                 default: {
-                    struct dict* a = get_idents(ast->binary.left);
+                    struct dict* a = get_idents(ast->ternary.left);
                     if(a->k->sz > 0) dict_append(dict, a);
                     else dict_free(a);
 
-                    struct dict* b = get_idents(ast->binary.right);
+                    struct dict* b = get_idents(ast->ternary.center);
                     if(b->k->sz > 0) dict_append(dict, b);
                     else dict_free(b);
-                    break;
+
+                    struct dict* c = get_idents(ast->ternary.right);
+                    if(c->k->sz > 0) dict_append(dict, c);
+                    else dict_free(c);
                 }
             }
-            break;
-        }
-        case AST_TERNARY: {
-            struct dict* a = get_idents(ast->ternary.left);
-            if(a->k->sz > 0) dict_append(dict, a);
-            else dict_free(a);
-
-            struct dict* b = get_idents(ast->ternary.center);
-            if(b->k->sz > 0) dict_append(dict, b);
-            else dict_free(b);
-
-            struct dict* c = get_idents(ast->ternary.right);
-            if(c->k->sz > 0) dict_append(dict, c);
-            else dict_free(c);
             break;
         }
         case AST_LIST: {
