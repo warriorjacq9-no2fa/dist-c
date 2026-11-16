@@ -11,6 +11,10 @@ struct scoped_type {
     char* type;
 };
 
+void emit(char* s) {
+    fprintf(stderr, "%s", s);
+}
+
 /* Returns dict with keys as identifiers and values as struct scoped_type* */
 struct dict* get_idents(struct ast* ast) {
     /* Push on entering new scope */
@@ -20,14 +24,7 @@ struct dict* get_idents(struct ast* ast) {
     if(ast == NULL || ast->type == AST_NUMBER || ast->type == AST_IDENT)
         return dict;
     bool is_scope = false;
-    printf("get_idents %p\n", ast);
-    for(int i = 127; i >= 0; i--) {
-        printf("%p(%s) ",
-            stack[i], stack[i] ? op_strings[stack[i]->unary.op] : ""
-        );
-        if(i % 16 == 0) printf("\n");
-    }
-    printf("\n");
+    if(ast->type == AST_NUMBER || ast->type == AST_IDENT) goto _default;
     switch(ast->unary.op) {
         case OP_ARG:
         case OP_VAR_PROTO: {
@@ -81,7 +78,7 @@ struct dict* get_idents(struct ast* ast) {
         case OP_PROGRAM:
             is_scope = true;
             [[fallthrough]];
-        default:
+        default: _default:
             if(is_scope) stack[--sp] = ast;
             switch(ast->type) {
                 case AST_UNARY: {
@@ -130,7 +127,293 @@ _case_ternary: {
     return dict;
 }
 
-char* compile(struct ast* ast) {
+void do_compile(struct ast* ast) {
+    switch(ast->type) {
+        case AST_NUMBER: {
+            char buf[256];
+            snprintf(buf, 256, "mov eax, %d\n", ast->number.value);
+            emit(buf);
+            break;
+        }
+        case AST_IDENT: {
+            char buf[256];
+            snprintf(buf, 256, "mov eax, [%s]\n", ast->ident.value);
+            emit(buf);
+            break;
+        }
+        default:
+            switch(ast->unary.op) {
+                case OP_POST_INC:
+                    do_compile(ast->unary.next);
+                    emit("inc eax\n");
+                    break;
+                case OP_POST_DEC:
+                    do_compile(ast->unary.next);
+                    emit("dec eax\n");
+                    break;
+                case OP_CALL: {
+                    struct ast* args = ast->binary.right;
+                    for(int i = args->list.sz - 1; i >= 0; i--) {
+                        do_compile(args->list.list[i]);
+                        emit("push eax\n");
+                    }
+                    do_compile(ast->binary.left);
+                    emit("call eax\n");
+                    break;
+                }
+                case OP_ARRAY_DEREF:
+                    do_compile(ast->binary.left);
+                    emit("push eax\n");
+                    do_compile(ast->binary.right);
+                    emit("mov ecx, eax\n");
+                    emit("pop ebx\n");
+
+                    emit("mov eax, [ebx + ecx]\n");
+                    break;
+                case OP_PRE_INC:
+                    emit("inc eax\n");
+                    do_compile(ast->unary.next);
+                    break;
+                case OP_PRE_DEC:
+                    emit("dec eax\n");
+                    do_compile(ast->unary.next);
+                    break;
+                case OP_UNARY_PLUS:
+                    break;
+                case OP_UNARY_MINUS:
+                    emit("neg eax\n");
+                    do_compile(ast->unary.next);
+                    break;
+                case OP_BOOLINV:
+                    emit("test eax, eax\n");
+                    emit("setz al");
+                    emit("movzx eax, al\n");
+                    do_compile(ast->unary.next);
+                    break;
+                case OP_LOGINV:
+                    emit("not eax\n");
+                    do_compile(ast->unary.next);
+                    break;
+                case OP_DEREF:
+                    emit("mov eax, [eax]\n");
+                    break;
+                case OP_REF:
+                    break;
+                case OP_MUL:
+                    do_compile(ast->binary.left);
+                    emit("push eax\n");
+                    do_compile(ast->binary.right);
+                    emit("pop ecx\n");
+                    emit("mul ecx\n");
+                    break;
+                case OP_DIV:
+                    do_compile(ast->binary.left);
+                    emit("push eax\n");
+                    do_compile(ast->binary.right);
+                    emit("mov ecx, eax\n");
+                    emit("xor edx, edx\n");
+                    emit("pop eax\n");
+                    emit("div ecx\n");
+                    break;
+                case OP_MOD:
+                    do_compile(ast->binary.left);
+                    emit("push eax\n");
+                    do_compile(ast->binary.right);
+                    emit("mov ecx, eax\n");
+                    emit("xor edx, edx\n");
+                    emit("pop eax\n");
+                    emit("div ecx\n");
+                    emit("mov eax, edx\n");
+                    break;
+                case OP_ADD:
+                    do_compile(ast->binary.left);
+                    emit("push eax\n");
+                    do_compile(ast->binary.right);
+                    emit("pop ecx\n");
+                    emit("add eax, ecx\n");
+                    break;
+                case OP_SUB:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("xchg ecx, eax\n");
+                    emit("sub eax, ecx\n");
+                    break;
+                case OP_LSHIFT:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("xchg ecx, eax\n");
+                    emit("shl eax, cl\n");
+                    break;
+                case OP_RSHIFT:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("xchg ecx, eax\n");
+                    emit("shr eax, cl\n");
+                    break;
+                case OP_LESS:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("test ecx, eax\n");
+                    emit("setb al\n");
+                    emit("movzx eax, al\n");
+                    break;
+                case OP_LEQ:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("test ecx, eax\n");
+                    emit("setbe al\n");
+                    emit("movzx eax, al");
+                    break;
+                case OP_GREATER:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("test ecx, eax\n");
+                    emit("seta al\n");
+                    emit("movzx eax, al\n");
+                    break;
+                case OP_GEQ:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("test ecx, eax\n");
+                    emit("setae al\n");
+                    emit("movzx eax, al\n");
+                    break;
+                case OP_EQUALTO:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("test ecx, eax\n");
+                    emit("sete al\n");
+                    emit("movzx eax, al\n");
+                    break;
+                case OP_NEQ:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("test ecx, eax\n");
+                    emit("setne al\n");
+                    emit("movzx eax, al\n");
+                    break;
+                case OP_AND:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("and eax, ecx\n");
+                    break;
+                case OP_XOR:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("xor eax, ecx\n");
+                    break;
+                case OP_OR:
+                    do_compile(ast->binary.left);
+                    emit("mov ecx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("or eax, ecx\n");
+                    break;
+                case OP_BOOLAND:
+                    do_compile(ast->binary.left);
+                    emit("test eax, eax\n");
+                    emit("setnz bl\n");
+                    do_compile(ast->binary.right);
+                    emit("test eax, eax\n");
+                    emit("setnz al\n");
+                    emit("and al, bl\n");
+                    emit("movzx eax, al\n");
+                    break;
+                case OP_BOOLOR:
+                    do_compile(ast->binary.left);
+                    emit("test eax, eax\n");
+                    emit("setnz bl\n");
+                    do_compile(ast->binary.right);
+                    emit("test eax, eax\n");
+                    emit("setnz al\n");
+                    emit("or al, bl\n");
+                    emit("movzx eax, al\n");
+                    break;
+                case OP_TERNARY:
+                    break; // TODO: ternary
+                case OP_ASSIGN:
+                    do_compile(ast->binary.left);
+                    emit("mov ebx, eax\n");
+                    do_compile(ast->binary.right);
+                    emit("mov [ebx], eax\n");
+                    break; // TODO: fix assign
+                case OP_COMMA:
+                    do_compile(ast->binary.left);
+                    do_compile(ast->binary.right);
+                    break;
+
+                case OP_WHILE: {
+                    char buf[256];
+                    snprintf(buf, 256, "_while_%p:\n", ast);
+                    emit(buf);
+                    do_compile(ast->binary.right);
+                    do_compile(ast->binary.left);
+                    emit("test eax, eax\n");
+                    snprintf(buf, 256, "jz _while_%p\n", ast);
+                    emit(buf);
+                    break;
+                }
+                // TODO: switches
+                case OP_RETURN:
+                    do_compile(ast->unary.next);
+                    emit("ret\n");
+                    break;
+                // TODO: other conditionals
+                case OP_DEFAULT:
+                case OP_CASE:
+                case OP_SWITCH:
+                case OP_SWITCH_BODY:
+                case OP_IF:
+                case OP_GOTO:
+                case OP_FOR:
+                case OP_FOR_CLAUSE:
+                case OP_DO_WHILE:
+                case OP_BREAK:
+                    break;
+
+                case OP_STMT_BODY:
+                case OP_FUNC_BODY:
+                case OP_PROGRAM:
+                    for(size_t i = 0; i < ast->list.sz; i++)
+                        do_compile(ast->list.list[i]);
+                    break;
+                
+                case OP_ARG:
+                case OP_ARG_LIST:
+                case OP_FUNC_PROTO: {
+                    struct ast* body = ast->ternary.right;
+                    if(body) {
+                        for(size_t i = 0; i < body->list.sz; i++)
+                        do_compile(body->list.list[i]);
+                    }
+                    break;
+                }
+
+                case OP_FUNC_ID:
+                case OP_VAR_PROTO:
+                case OP_VAR_BODY:
+                case OP_VAR:
+                case OP_TYPE:
+                case OP_POST:
+                case OP_CALL_ARGS:
+                case OP_TYPECAST:
+                case _OP_ENDOFLIST:
+                  break;
+                }
+    }
+}
+
+void compile(struct ast* ast) {
     struct dict* dict = get_idents(ast);
 
     size_t k_sz = dict->k->sz;
@@ -146,67 +429,5 @@ char* compile(struct ast* ast) {
         );
     }
     printf("}\n");
-    switch(ast->unary.op) {
-        case OP_TYPE:
-        case OP_POST:
-        case OP_POST_INC:
-        case OP_POST_DEC:
-        case OP_CALL:
-        case OP_CALL_ARGS:
-        case OP_ARRAY_DEREF:
-        case OP_PRE_INC:
-        case OP_PRE_DEC:
-        case OP_UNARY_PLUS:
-        case OP_UNARY_MINUS:
-        case OP_BOOLINV:
-        case OP_LOGINV:
-        case OP_TYPECAST:
-        case OP_DEREF:
-        case OP_REF:
-        case OP_MUL:
-        case OP_DIV:
-        case OP_MOD:
-        case OP_ADD:
-        case OP_SUB:
-        case OP_LSHIFT:
-        case OP_RSHIFT:
-        case OP_LESS:
-        case OP_LEQ:
-        case OP_GREATER:
-        case OP_GEQ:
-        case OP_EQUALTO:
-        case OP_NEQ:
-        case OP_AND:
-        case OP_XOR:
-        case OP_OR:
-        case OP_BOOLAND:
-        case OP_BOOLOR:
-        case OP_TERNARY:
-        case OP_ASSIGN:
-        case OP_COMMA:
-        case OP_WHILE:
-        case OP_DEFAULT:
-        case OP_CASE:
-        case OP_SWITCH:
-        case OP_SWITCH_BODY:
-        case OP_RETURN:
-        case OP_IF:
-        case OP_GOTO:
-        case OP_FOR:
-        case OP_FOR_CLAUSE:
-        case OP_DO_WHILE:
-        case OP_BREAK:
-        case OP_STMT_BODY:
-        case OP_ARG:
-        case OP_ARG_LIST:
-        case OP_FUNC_PROTO:
-        case OP_FUNC_BODY:
-        case OP_FUNC_ID:
-        case OP_VAR_PROTO:
-        case OP_VAR_BODY:
-        case OP_VAR:
-        case OP_PROGRAM:
-        default: break;
-    }
-    return NULL;
+    do_compile(ast);
 }

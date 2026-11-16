@@ -3,6 +3,6 @@
 
 #include "ast.h"
 
-char* compile(struct ast* ast);
+void compile(struct ast* ast);
 
 #endif
