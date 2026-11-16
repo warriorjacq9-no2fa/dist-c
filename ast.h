@@ -91,7 +91,7 @@ enum op {
 /* decl */
     OP_FUNC_PROTO,
     OP_FUNC_BODY,
-    OP_FUNC,
+    OP_FUNC_ID,
     OP_VAR_PROTO,
     OP_VAR_BODY,
     OP_VAR,

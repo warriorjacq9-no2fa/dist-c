@@ -1146,16 +1146,17 @@ struct ast* decl() {
         struct ast* new = ast_new();
         new->type = AST_TERNARY;
         new->ternary.op = OP_FUNC_PROTO;
-        new->ternary.left = t;
-        new->ternary.center = id;
-        new->ternary.right = args;
+
+        struct ast* func_id = ast_new();
+        func_id->type = AST_BINARY;
+        func_id->binary.op = OP_FUNC_ID;
+        func_id->binary.left = t;
+        func_id->binary.right = id;
+
+        new->ternary.left = func_id;
+        new->ternary.center = args;
 
         if(accept(TOK_LBRACE)) {
-            struct ast* top = ast_new();
-            top->type = AST_BINARY;
-            top->binary.op = OP_FUNC;
-            top->binary.left = new;
-
             struct ast* body = ast_new();
             body->type = AST_LIST;
             body->list.op = OP_FUNC_BODY;
@@ -1166,8 +1167,8 @@ struct ast* decl() {
             memcpy(body->list.list, stmts, sz * sizeof(struct ast*));
             body->list.sz = sz;
             expect(TOK_RBRACE);
-            top->binary.right = body;
-            return top;
+            new->ternary.right = body;
+            return new;
         }
         expect(TOK_SEMICOLON);
 
@@ -1188,6 +1189,11 @@ struct ast* decl() {
         proto->binary.op = OP_VAR_PROTO;
         proto->binary.left = t;
         proto->binary.right = id;
+            
+        struct ast* new = ast_new();
+        new->type = AST_BINARY;
+        new->binary.op = OP_VAR;
+        new->binary.left = proto;
 
         if(arr || val) {
             struct ast* body = ast_new();
@@ -1195,15 +1201,9 @@ struct ast* decl() {
             body->binary.op = OP_VAR_BODY;
             body->binary.left = arr;
             body->binary.right = val;
-            
-            struct ast* new = ast_new();
-            new->type = AST_BINARY;
-            new->binary.op = OP_VAR;
-            new->binary.left = proto;
             new->binary.right = body;
-            return new;
         }
-        return proto;
+        return new;
     }
     return NULL;
 }

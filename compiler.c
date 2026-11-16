@@ -14,12 +14,20 @@ struct scoped_type {
 /* Returns dict with keys as identifiers and values as struct scoped_type* */
 struct dict* get_idents(struct ast* ast) {
     /* Push on entering new scope */
-    static struct ast* stack[1024];
-    static size_t sp = 1024;
+    static struct ast* stack[128];
+    static size_t sp = 128;
     struct dict* dict = dict_new(0);
     if(ast == NULL || ast->type == AST_NUMBER || ast->type == AST_IDENT)
         return dict;
     bool is_scope = false;
+    printf("get_idents %p\n", ast);
+    for(int i = 127; i >= 0; i--) {
+        printf("%p(%s) ",
+            stack[i], stack[i] ? op_strings[stack[i]->unary.op] : ""
+        );
+        if(i % 16 == 0) printf("\n");
+    }
+    printf("\n");
     switch(ast->unary.op) {
         case OP_ARG:
         case OP_VAR_PROTO: {
@@ -37,34 +45,38 @@ struct dict* get_idents(struct ast* ast) {
             break;
         }
         case OP_FUNC_PROTO: {
+            struct ast* id = ast->ternary.left;
             dict->k = realloc(dict->k, sizeof(struct array) + sizeof(void*));
             dict->k->sz = 1;
-            dict->k->data[0] = strdup(ast->ternary.center->ident.value);
+            dict->k->data[0] = strdup(id->binary.right->ident.value);
 
             dict->v = realloc(dict->v, sizeof(struct array) + sizeof(void*));
             dict->v->sz = 1;
 
             struct scoped_type* t = malloc(sizeof(struct scoped_type));
-            char* type = strdup(ast->ternary.left->unary.next->ident.value);
+            char* type = strdup(id->binary.left->unary.next->ident.value);
             size_t sz = strlen(type) + 5;
             type = realloc(type, sz);
-            memmove(&type[5], type, sz - 5);
+            memmove(&type[2], type, sz - 2);
             type[0] = 'f',
-            type[1] = 'u',
-            type[2] = 'n',
-            type[3] = 'c';
-            type[4] = ':';
+            type[1] = ':';
 
             t->scope_top = stack[sp];
             t->type = type;
             dict->v->data[0] = t;
 
+            if(ast->ternary.right) {
+                stack[--sp] = ast->ternary.right;
+            } else {
+                stack[--sp] = ast;
+            }
+            is_scope = true;
             goto _case_ternary;
             break;
         }
         case OP_SWITCH_BODY:
         case OP_STMT_BODY:
-        case OP_FUNC:
+        case OP_FUNC_BODY:
         case OP_PROGRAM:
             is_scope = true;
             [[fallthrough]];
@@ -188,7 +200,7 @@ char* compile(struct ast* ast) {
         case OP_ARG_LIST:
         case OP_FUNC_PROTO:
         case OP_FUNC_BODY:
-        case OP_FUNC:
+        case OP_FUNC_ID:
         case OP_VAR_PROTO:
         case OP_VAR_BODY:
         case OP_VAR:
