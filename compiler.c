@@ -74,6 +74,7 @@ struct dict* get_idents(struct ast* ast) {
             goto _case_ternary;
             break;
         }
+        case OP_FOR:
         case OP_SWITCH_BODY:
         case OP_STMT_BODY:
         case OP_FUNC_BODY:
