@@ -128,6 +128,7 @@ _case_ternary: {
 }
 
 void do_compile(struct ast* ast) {
+    if(ast == NULL) return;
     switch(ast->type) {
         case AST_NUMBER: {
             char buf[256];
@@ -356,28 +357,85 @@ void do_compile(struct ast* ast) {
                     char buf[256];
                     snprintf(buf, 256, "_while_%p:\n", ast);
                     emit(buf);
-                    do_compile(ast->binary.right);
+
                     do_compile(ast->binary.left);
+
                     emit("test eax, eax\n");
-                    snprintf(buf, 256, "jz _while_%p\n", ast);
+                    snprintf(buf, 256, "jz _end_while_%p\n", ast);
+                    emit(buf);
+
+                    do_compile(ast->binary.right);
+
+                    snprintf(buf, 256, "jmp _while_%p\n", ast);
+                    emit(buf);
+
+                    snprintf(buf, 256, "_end_while_%p:\n", ast);
                     emit(buf);
                     break;
                 }
                 // TODO: switches
+                case OP_DEFAULT:
+                case OP_CASE:
+                case OP_SWITCH:
+                case OP_SWITCH_BODY:
                 case OP_RETURN:
                     do_compile(ast->unary.next);
                     emit("ret\n");
                     break;
                 // TODO: other conditionals
-                case OP_DEFAULT:
-                case OP_CASE:
-                case OP_SWITCH:
-                case OP_SWITCH_BODY:
-                case OP_IF:
-                case OP_GOTO:
-                case OP_FOR:
-                case OP_FOR_CLAUSE:
-                case OP_DO_WHILE:
+                case OP_IF: {
+                    do_compile(ast->ternary.left);
+                    emit("test eax, eax\n");
+                    char buf[256];
+                    snprintf(buf, 256, "jz _else_%p\n", ast);
+                    emit(buf);
+                    do_compile(ast->ternary.center);
+                    snprintf(buf, 256, "_else_%p:\n", ast);
+                    do_compile(ast->ternary.right);
+                    break;
+                }
+                case OP_GOTO: {
+                    char buf[256];
+                    snprintf(buf, 256, "jmp %s\n", ast->unary.next->ident.value);
+                    emit(buf);
+                    break;
+                }
+                case OP_FOR: {
+                    struct ast* clause = ast->binary.left;
+                    
+                    do_compile(clause->ternary.left);
+
+                    char buf[256];
+                    snprintf(buf, 256, "_for_%p:\n", ast);
+                    emit(buf);
+
+                    do_compile(clause->ternary.center);
+
+                    emit("test eax, eax\n");
+                    snprintf(buf, 256, "jz _end_for_%p\n", ast);
+                    emit(buf);
+
+                    do_compile(ast->binary.right);
+                    do_compile(clause->ternary.right);
+
+                    snprintf(buf, 256, "jmp _for_%p\n", ast);
+                    emit(buf);
+
+                    snprintf(buf, 256, "_end_for_%p:\n", ast);
+                    emit(buf);
+                    break;
+                }
+                case OP_DO_WHILE: {
+                    char buf[256];
+                    snprintf(buf, 256, "_dowhile_%p:\n", ast);
+                    emit(buf);
+                    do_compile(ast->binary.right);
+                    do_compile(ast->binary.left);
+                    emit("test eax, eax\n");
+                    snprintf(buf, 256, "jnz _dowhile_%p\n", ast);
+                    emit(buf);
+                    break;
+                }
                 case OP_BREAK:
                     break;
 
@@ -387,9 +445,7 @@ void do_compile(struct ast* ast) {
                     for(size_t i = 0; i < ast->list.sz; i++)
                         do_compile(ast->list.list[i]);
                     break;
-                
-                case OP_ARG:
-                case OP_ARG_LIST:
+
                 case OP_FUNC_PROTO: {
                     struct ast* body = ast->ternary.right;
                     if(body) {
@@ -398,18 +454,10 @@ void do_compile(struct ast* ast) {
                     }
                     break;
                 }
-
-                case OP_FUNC_ID:
-                case OP_VAR_PROTO:
-                case OP_VAR_BODY:
-                case OP_VAR:
-                case OP_TYPE:
-                case OP_POST:
-                case OP_CALL_ARGS:
-                case OP_TYPECAST:
-                case _OP_ENDOFLIST:
-                  break;
-                }
+                
+                default:
+                    break;
+            }
     }
 }
 
