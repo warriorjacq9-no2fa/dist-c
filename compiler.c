@@ -143,13 +143,13 @@ enum value do_compile(struct ast* ast) {
     switch(ast->type) {
         case AST_NUMBER: {
             char buf[256];
-            snprintf(buf, 256, "    mov eax, %d\n", ast->number.value);
+            snprintf(buf, 256, "    mov rax, %d\n", ast->number.value);
             emit(buf);
             return VAL_LITERAL;
         }
         case AST_IDENT: {
             char buf[256];
-            snprintf(buf, 256, "    mov eax, %s\n", ast->ident.value);
+            snprintf(buf, 256, "    mov rax, %s\n", ast->ident.value);
             emit(buf);
             return VAL_PTR;
         }
@@ -159,10 +159,10 @@ enum value do_compile(struct ast* ast) {
                     enum value v = do_compile(ast->unary.next);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    inc eax\n");
+                            emit("    inc rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    inc [eax]\n");
+                            emit("    inc [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -174,10 +174,10 @@ enum value do_compile(struct ast* ast) {
                     enum value v = do_compile(ast->unary.next);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    dec eax\n");
+                            emit("    dec rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    dec [eax]\n");
+                            emit("    dec [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -191,10 +191,10 @@ enum value do_compile(struct ast* ast) {
                         enum value v = do_compile(args->list.list[i]);
                         switch(v) {
                             case VAL_LITERAL:
-                                emit("    push eax\n");
+                                emit("    push rax\n");
                                 break;
                             case VAL_PTR:
-                                emit("    push [eax]\n");
+                                emit("    push [rax]\n");
                                 break;
                             default:
                                 c_error(ast, "Expected rvalue");
@@ -204,10 +204,10 @@ enum value do_compile(struct ast* ast) {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    call eax\n");
+                            emit("    call rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    call [eax]\n");
+                            emit("    call [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -219,10 +219,10 @@ enum value do_compile(struct ast* ast) {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -231,28 +231,28 @@ enum value do_compile(struct ast* ast) {
                     v = do_compile(ast->binary.right);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    mov ecx, eax\n");
+                            emit("    mov rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    mov ecx, [eax]\n");
+                            emit("    mov rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue");
                             break;
                     }
-                    emit("    pop ebx\n");
+                    emit("    pop rbx\n");
 
-                    emit("    mov eax, [ebx + ecx]\n");
+                    emit("    mov rax, [rbx + rcx]\n");
                     break;
                 }
                 case OP_PRE_INC: { // TODO: proper pre inc and dec
                     enum value v = do_compile(ast->unary.next);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    inc eax\n");
+                            emit("    inc rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    inc [eax]\n");
+                            emit("    inc [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -264,10 +264,10 @@ enum value do_compile(struct ast* ast) {
                     enum value v = do_compile(ast->unary.next);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    dec eax\n");
+                            emit("    dec rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    dec [eax]\n");
+                            emit("    dec [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -281,10 +281,10 @@ enum value do_compile(struct ast* ast) {
                     enum value v = do_compile(ast->unary.next);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    neg eax\n");
+                            emit("    neg rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    neg [eax]\n");
+                            emit("    neg [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -294,20 +294,20 @@ enum value do_compile(struct ast* ast) {
                 }
                 case OP_BOOLINV: {
                     enum value v = do_compile(ast->unary.next);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    test eax, eax\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    test rax, rax\n");
                     emit("    setz al\n");
-                    emit("    movzx eax, al\n");
+                    emit("    movzx rax, al\n");
                     break;
                 }
                 case OP_LOGINV: {
                     enum value v = do_compile(ast->unary.next);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    not eax\n");
+                            emit("    not rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    not [eax]\n");
+                            emit("    not [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -317,8 +317,8 @@ enum value do_compile(struct ast* ast) {
                 }
                 case OP_DEREF: {
                     enum value v = do_compile(ast->unary.next);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    mov eax, [eax]\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    mov rax, [rax]\n");
                     break;
                 }
                 case OP_REF:
@@ -327,23 +327,23 @@ enum value do_compile(struct ast* ast) {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    emit("    pop ecx\n");
+                    emit("    pop rcx\n");
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    mul ecx\n");
+                            emit("    mul rcx\n");
                             break;
                         case VAL_PTR:
-                            emit("    mul [ecx]\n");
+                            emit("    mul [rcx]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue");
@@ -355,25 +355,25 @@ enum value do_compile(struct ast* ast) {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    emit("    mov ecx, eax\n");
-                    emit("    xor edx, edx\n");
-                    emit("    pop eax\n");
+                    emit("    mov rcx, rax\n");
+                    emit("    xor rdx, rdx\n");
+                    emit("    pop rax\n");
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    div ecx\n");
+                            emit("    div rcx\n");
                             break;
                         case VAL_PTR:
-                            emit("    div [ecx]\n");
+                            emit("    div [rcx]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue");
@@ -385,60 +385,60 @@ enum value do_compile(struct ast* ast) {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    emit("    mov ecx, eax\n");
-                    emit("    xor edx, edx\n");
-                    emit("    pop eax\n");
+                    emit("    mov rcx, rax\n");
+                    emit("    xor rdx, rdx\n");
+                    emit("    pop rax\n");
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    div ecx\n");
+                            emit("    div rcx\n");
                             break;
                         case VAL_PTR:
-                            emit("    div [ecx]\n");
+                            emit("    div [rcx]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue");
                             break;
                     }
-                    emit("    mov eax, edx\n");
+                    emit("    mov rax, rdx\n");
                     break;
                 }
                 case OP_ADD: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    pop ecx\n");
-                    emit("    add eax, ecx\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    pop rcx\n");
+                    emit("    add rax, rcx\n");
                     break;
                 }
                 case OP_SUB: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -447,27 +447,27 @@ enum value do_compile(struct ast* ast) {
                     v = do_compile(ast->binary.right);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    mov ecx, eax\n");
+                            emit("    mov rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    mov ecx, [eax]\n");
+                            emit("    mov rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue");
                             break;
                     }
-                    emit("    pop eax\n");
-                    emit("    sub eax, ecx\n");
+                    emit("    pop rax\n");
+                    emit("    sub rax, rcx\n");
                     break;
                 }
                 case OP_LSHIFT: { // TODO: shift by full size number
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -476,27 +476,27 @@ enum value do_compile(struct ast* ast) {
                     v = do_compile(ast->binary.right);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    mov ecx, eax\n");
+                            emit("    mov rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    mov ecx, [eax]\n");
+                            emit("    mov rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue");
                             break;
                     }
-                    emit("    pop eax\n");
-                    emit("    shl eax, cl\n");
+                    emit("    pop rax\n");
+                    emit("    shl rax, cl\n");
                     break;
                 }
                 case OP_RSHIFT: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
@@ -505,284 +505,284 @@ enum value do_compile(struct ast* ast) {
                     v = do_compile(ast->binary.right);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    mov ecx, eax\n");
+                            emit("    mov rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    mov ecx, [eax]\n");
+                            emit("    mov rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue");
                             break;
                     }
-                    emit("    pop eax\n");
-                    emit("    shr eax, cl\n");
+                    emit("    pop rax\n");
+                    emit("    shr rax, cl\n");
                     break;
                 }
                 case OP_LESS: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    emit("    pop ecx\n");
+                    emit("    pop rcx\n");
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    cmp ecx, eax\n");
+                            emit("    cmp rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    cmp ecx, [eax]\n");
+                            emit("    cmp rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue\n");
                             break;
                     }
                     emit("    setb al\n");
-                    emit("    movzx eax, al\n");
+                    emit("    movzx rax, al\n");
                     break;
                 }
                 case OP_LEQ: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    emit("    pop ecx\n");
+                    emit("    pop rcx\n");
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    cmp ecx, eax\n");
+                            emit("    cmp rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    cmp ecx, [eax]\n");
+                            emit("    cmp rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue\n");
                             break;
                     }
                     emit("    setbe al\n");
-                    emit("    movzx eax, al\n");
+                    emit("    movzx rax, al\n");
                     break;
                 }
                 case OP_GREATER: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    emit("    pop ecx\n");
+                    emit("    pop rcx\n");
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    cmp ecx, eax\n");
+                            emit("    cmp rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    cmp ecx, [eax]\n");
+                            emit("    cmp rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue\n");
                             break;
                     }
                     emit("    seta al\n");
-                    emit("    movzx eax, al\n");
+                    emit("    movzx rax, al\n");
                     break;
                 }
                 case OP_GEQ: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    emit("    pop ecx\n");
+                    emit("    pop rcx\n");
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    cmp ecx, eax\n");
+                            emit("    cmp rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    cmp ecx, [eax]\n");
+                            emit("    cmp rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue\n");
                             break;
                     }
                     emit("    setae al\n");
-                    emit("    movzx eax, al\n");
+                    emit("    movzx rax, al\n");
                     break;
                 }
                 case OP_EQUALTO: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    emit("    pop ecx\n");
+                    emit("    pop rcx\n");
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    cmp ecx, eax\n");
+                            emit("    cmp rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    cmp ecx, [eax]\n");
+                            emit("    cmp rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue\n");
                             break;
                     }
                     emit("    sete al\n");
-                    emit("    movzx eax, al\n");
+                    emit("    movzx rax, al\n");
                     break;
                 }
                 case OP_NEQ: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    emit("    pop ecx\n");
+                    emit("    pop rcx\n");
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    cmp ecx, eax\n");
+                            emit("    cmp rcx, rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    cmp ecx, [eax]\n");
+                            emit("    cmp rcx, [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected rvalue\n");
                             break;
                     }
                     emit("    setne al\n");
-                    emit("    movzx eax, al\n");
+                    emit("    movzx rax, al\n");
                     break;
                 }
                 case OP_AND: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    pop ecx\n");
-                    emit("    and eax, ecx\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    pop rcx\n");
+                    emit("    and rax, rcx\n");
                     break;
                 }
                 case OP_XOR: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    pop ecx\n");
-                    emit("    xor eax, ecx\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    pop rcx\n");
+                    emit("    xor rax, rcx\n");
                     break;
                 }
                 case OP_OR: {
                     enum value v = do_compile(ast->binary.left);
                     switch(v) {
                         case VAL_LITERAL:
-                            emit("    push eax\n");
+                            emit("    push rax\n");
                             break;
                         case VAL_PTR:
-                            emit("    push [eax]\n");
+                            emit("    push [rax]\n");
                             break;
                         default:
                             c_error(ast, "Expected lvalue");
                             break;
                     }
                     v = do_compile(ast->binary.right);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    pop ecx\n");
-                    emit("    or eax, ecx\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    pop rcx\n");
+                    emit("    or rax, rcx\n");
                     break;
                 }
                 case OP_BOOLAND: {
                     enum value v = do_compile(ast->binary.left);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    test eax, eax\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    test rax, rax\n");
                     emit("    setnz al\n");
-                    emit("    push al\n");
+                    emit("    push rax\n");
                     v = do_compile(ast->binary.right);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    test eax, eax\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    test rax, rax\n");
                     emit("    setnz al\n");
-                    emit("    pop bl\n");
+                    emit("    pop rbx\n");
                     emit("    and al, bl\n");
-                    emit("    movzx eax, al\n");
+                    emit("    movzx rax, al\n");
                     break;
                 }
                 case OP_BOOLOR: {
                     enum value v = do_compile(ast->binary.left);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    test eax, eax\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    test rax, rax\n");
                     emit("    setnz al\n");
-                    emit("    push al\n");
+                    emit("    push rax\n");
                     v = do_compile(ast->binary.right);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
-                    emit("    test eax, eax\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    test rax, rax\n");
                     emit("    setnz al\n");
                     emit("    pop bl\n");
                     emit("    or al, bl\n");
-                    emit("    movzx eax, al\n");
+                    emit("    movzx rax, al\n");
                     break;
                 }
                 case OP_TERNARY:
@@ -790,20 +790,11 @@ enum value do_compile(struct ast* ast) {
                 case OP_ASSIGN: {
                     enum value v = do_compile(ast->binary.left);
                     if(v != VAL_PTR) c_error(ast, "Invalid lvalue for assign");
-                    emit("    push eax\n");
+                    emit("    push rax\n");
                     v = do_compile(ast->binary.right);
-                    emit("    pop ebx\n");
-                    switch(v) {
-                        case VAL_LITERAL:
-                            emit("    mov [ebx], eax\n");
-                            break;
-                        case VAL_PTR:
-                            emit("    mov [ebx], [eax]\n");
-                            break;
-                        case VAL_NONE:
-                            c_error(ast, "Expected rvalue");
-                            break;
-                    }
+                    emit("    pop rbx\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    mov [rbx], rax\n");
                     break;
                 }
                 case OP_COMMA:
@@ -818,7 +809,7 @@ enum value do_compile(struct ast* ast) {
 
                     do_compile(ast->binary.left);
 
-                    emit("    test eax, eax\n");
+                    emit("    test rax, rax\n");
                     snprintf(buf, 256, "    jz _end_while_%p\n", ast);
                     emit(buf);
 
@@ -838,13 +829,13 @@ enum value do_compile(struct ast* ast) {
                 case OP_SWITCH_BODY:
                 case OP_RETURN: {
                     enum value v = do_compile(ast->unary.next);
-                    if(v == VAL_PTR) emit("    mov eax, [eax]\n");
+                    if(v == VAL_PTR) emit("    mov rax, [rax]\n");
                     emit("    ret\n");
                     break;
                 }
                 case OP_IF: {
                     do_compile(ast->ternary.left);
-                    emit("    test eax, eax\n");
+                    emit("    test rax, rax\n");
                     char buf[256];
                     snprintf(buf, 256, "    jz _else_%p\n", ast);
                     emit(buf);
@@ -875,7 +866,7 @@ enum value do_compile(struct ast* ast) {
 
                     do_compile(clause->ternary.center);
 
-                    emit("    test eax, eax\n");
+                    emit("    test rax, rax\n");
                     snprintf(buf, 256, "    jz _end_for_%p\n", ast);
                     emit(buf);
 
@@ -895,7 +886,7 @@ enum value do_compile(struct ast* ast) {
                     emit(buf);
                     do_compile(ast->binary.right);
                     do_compile(ast->binary.left);
-                    emit("    test eax, eax\n");
+                    emit("    test rax, rax\n");
                     snprintf(buf, 256, "    jnz _dowhile_%p\n", ast);
                     emit(buf);
                     break;
