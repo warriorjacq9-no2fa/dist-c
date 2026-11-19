@@ -832,10 +832,58 @@ enum value do_compile(struct ast* ast) {
                     emit(buf);
                     break;
                 }
-                // TODO: switches
                 case OP_DEFAULT:
                 case OP_CASE:
-                case OP_SWITCH:
+                case OP_SWITCH: {
+                    enum value v = do_compile(ast->binary.left);
+                    switch(v) {
+                        case VAL_LITERAL:
+                            emit("    mov rdx, rax\n");
+                            break;
+                        case VAL_PTR:
+                            emit("    mov rdx, [rax]\n");
+                            break;
+                        default:
+                            c_error(ast, "Expected rvalue\n");
+                            break;
+                    }
+                    struct ast* body = ast->binary.right;
+                    char buf[256];
+                    for(size_t i = 0; i < body->list.sz; i++) {
+                        struct ast* elem = body->list.list[i];
+                        switch(elem->unary.op) {
+                            case OP_CASE:
+                                v = do_compile(elem->unary.next);
+                                if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                                emit("    cmp rdx, rax\n");
+                                snprintf(buf, 256, "    je _case_%p\n", elem);
+                                emit(buf);
+                                break;
+                            case OP_DEFAULT:
+                                snprintf(buf, 256, "    jmp _default_%p\n", elem);
+                                emit(buf);
+                                break;
+                            default: break;
+                        }
+                    }
+                    for(size_t i = 0; i < body->list.sz; i++) {
+                        struct ast* elem = body->list.list[i];
+                        switch(elem->unary.op) {
+                            case OP_CASE:
+                                snprintf(buf, 256, "_case_%p:\n", elem);
+                                emit(buf);
+                                break;
+                            case OP_DEFAULT:
+                                snprintf(buf, 256, "_default_%p:\n", elem);
+                                emit(buf);
+                                break;
+                            default:
+                                do_compile(elem);
+                                break;
+                        }
+                    }
+
+                }
                 case OP_SWITCH_BODY:
                 case OP_RETURN: {
                     enum value v = do_compile(ast->unary.next);
@@ -903,7 +951,7 @@ enum value do_compile(struct ast* ast) {
                     break;
                 }
                 case OP_BREAK:
-                    break;
+                    break; // TODO: break
 
                 case OP_STMT_BODY:
                 case OP_FUNC_BODY:
