@@ -6,13 +6,28 @@
 #include <stdio.h>
 #include "dict.h"
 
+#define BUFFER_SZ 1024
+
+enum value {
+    VAL_NONE,
+    VAL_LITERAL,
+    VAL_PTR
+};
+
 struct scoped_type {
     struct ast* scope_top;
     char* type;
+    char* replacement;
+    enum value replacement_type;
 };
 
+static struct dict* vars;
+static char buffer[BUFFER_SZ];
+static size_t buf_idx = 0;
+
 void emit(char* s) {
-    fprintf(stderr, "%s", s);
+    snprintf(&buffer[buf_idx], BUFFER_SZ - buf_idx, "%s", s);
+    buf_idx += strlen(s);
 }
 
 [[noreturn]] void c_error(struct ast* ast, char* msg) { // TODO: line numbers
@@ -131,12 +146,6 @@ _case_ternary: {
     }
     return dict;
 }
-
-enum value {
-    VAL_NONE,
-    VAL_LITERAL,
-    VAL_PTR
-};
 // TODO: types
 enum value do_compile(struct ast* ast) {
     if(ast == NULL) return VAL_NONE;
@@ -149,9 +158,17 @@ enum value do_compile(struct ast* ast) {
         }
         case AST_IDENT: {
             char buf[256];
-            snprintf(buf, 256, "    mov rax, %s\n", ast->ident.value);
-            emit(buf);
-            return VAL_PTR;
+            struct scoped_type* t = dict_get(vars, ast->ident.value);
+            if(t && t->replacement) {
+                snprintf(buf, 256, "    mov rax, %s\n", t->replacement);
+                emit(buf);
+                return t->replacement_type;
+            } else {
+                snprintf(buf, 256, 
+                    "Symbol %s not defined", ast->ident.value
+                );
+                c_error(ast, buf);
+            }
         }
         default:
             switch(ast->unary.op) {
@@ -185,7 +202,7 @@ enum value do_compile(struct ast* ast) {
                     }
                     break;
                 }
-                case OP_CALL: {
+                case OP_CALL: { // TODO: fix CALL
                     struct ast* args = ast->binary.right;
                     for(int i = args->list.sz - 1; i >= 0; i--) {
                         enum value v = do_compile(args->list.list[i]);
@@ -201,17 +218,10 @@ enum value do_compile(struct ast* ast) {
                                 break;
                         }
                     }
-                    enum value v = do_compile(ast->binary.left);
-                    switch(v) {
-                        case VAL_LITERAL:
-                            emit("    call rax\n");
-                            break;
-                        case VAL_PTR:
-                            emit("    call [rax]\n");
-                            break;
-                        default:
-                            c_error(ast, "Expected lvalue");
-                            break;
+                    do_compile(ast->binary.left);
+                    emit("    call rax\n");
+                    for(int i = 0; i < args->list.sz; i++) {
+                        emit("    add rsp, 8\n");
                     }
                     break;
                 }
@@ -830,6 +840,7 @@ enum value do_compile(struct ast* ast) {
                 case OP_RETURN: {
                     enum value v = do_compile(ast->unary.next);
                     if(v == VAL_PTR) emit("    mov rax, [rax]\n");
+                    emit("    leave\n");
                     emit("    ret\n");
                     break;
                 }
@@ -905,10 +916,31 @@ enum value do_compile(struct ast* ast) {
                     struct ast* body = ast->ternary.right;
                     if(body) {
                         char buf[256];
+                        char* func_name = ast->ternary.left->binary.right->ident.value;
+                        struct scoped_type* t = dict_get(
+                            vars, func_name
+                        );
+                        t->replacement = strdup("fib");
+                        t->replacement_type = VAL_PTR;
                         snprintf(buf, 256, "%s:\n",
-                            ast->ternary.left->binary.right->ident.value
+                            func_name
                         );
                         emit(buf);
+                        emit("push rbp\n");
+                        emit("mov rbp, rsp\n");
+                        struct ast* args = ast->ternary.center;
+                        for(size_t i = 0; i < args->list.sz; i++) {
+                            snprintf(buf, 256, 
+                                "[rbp + %lu]",
+                                i * 8 + 16
+                            );
+                            struct scoped_type* t = dict_get(
+                                vars, 
+                                args->list.list[i]->binary.right->ident.value
+                            );
+                            t->replacement = strdup(buf);
+                            t->replacement_type = VAL_LITERAL;
+                        }
                         for(size_t i = 0; i < body->list.sz; i++)
                             do_compile(body->list.list[i]);
                     }
@@ -922,21 +954,55 @@ enum value do_compile(struct ast* ast) {
     return VAL_LITERAL;
 }
 
-void compile(struct ast* ast) {
-    struct dict* dict = get_idents(ast);
+void do_replace(char* data) {
+    char* ptr = data;
+    while((ptr = strstr(ptr, "_var_"))) {
+        size_t idx = ptr - data;
+        char* var = strdup(ptr);
+        size_t len = strlen(var);
+        for(size_t i = 0; i < len; i++) {
+            if(var[i] == ' ' || var[i] == '\n') {
+                var[i] = '\0';
+                break;
+            }
+        }
+        printf("Found var %s at index %ld\n", &var[5], idx);
+        struct scoped_type* t = dict_get(vars, &var[5]);
+        if(t && t->replacement) {
+            size_t r_len = strlen(t->replacement);
+            size_t var_len = strlen(var);
+            size_t ptr_len = strlen(ptr);
 
-    size_t k_sz = dict->k->sz;
-    size_t v_sz = dict->v->sz;
+            printf("r_len=%lu var_len=%lu ptr_len=%lu\n", r_len, var_len, ptr_len);
+            printf("memmove %p %p %lu\n", ptr, &ptr[var_len], ptr_len - var_len);
+            printf("memmove %p %p %lu\n", &ptr[r_len], ptr, ptr_len - r_len);
+            printf("memcpy %p %p %lu\n", ptr, t->replacement, r_len);
+
+            memmove(ptr, &ptr[var_len], ptr_len - var_len);
+            memmove(&ptr[r_len], ptr, ptr_len - r_len);
+            memcpy(ptr, t->replacement, r_len);
+            ptr += r_len;
+        } else ptr += strlen(var);
+        free(var);
+    }
+}
+
+void compile(struct ast* ast) {
+    vars = get_idents(ast);
+
+    size_t k_sz = vars->k->sz;
+    size_t v_sz = vars->v->sz;
     size_t sz = (k_sz < v_sz) ? k_sz : v_sz;
 
     printf("{\n");
     for(size_t i = 0; i < sz; i++) {
-        struct scoped_type* t = dict->v->data[i];
+        struct scoped_type* t = vars->v->data[i];
         printf("    %s: %s %p(%s)\n",
-            (char*)dict->k->data[i], t->type, t->scope_top,
+            (char*)vars->k->data[i], t->type, t->scope_top,
             op_strings[t->scope_top->unary.op]
         );
     }
     printf("}\n");
     do_compile(ast);
+    fprintf(stderr, "%s", buffer);
 }
